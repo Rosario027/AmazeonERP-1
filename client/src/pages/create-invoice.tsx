@@ -97,12 +97,27 @@ export default function CreateInvoice() {
     const quantity = item.quantity;
     const gstPercentage = parseFloat(item.gstPercentage);
     
-    const taxableValue = rate * quantity;
     const cgstPercentage = gstPercentage / 2;
     const sgstPercentage = gstPercentage / 2;
-    const cgstAmount = (taxableValue * cgstPercentage) / 100;
-    const sgstAmount = (taxableValue * sgstPercentage) / 100;
-    const total = taxableValue + cgstAmount + sgstAmount;
+    
+    let taxableValue: number;
+    let cgstAmount: number;
+    let sgstAmount: number;
+    let total: number;
+    
+    if (paymentMode === "Cash") {
+      const baseAmount = rate * quantity;
+      const gstAmount = (baseAmount * gstPercentage) / (100 + gstPercentage);
+      taxableValue = baseAmount - gstAmount;
+      cgstAmount = gstAmount / 2;
+      sgstAmount = gstAmount / 2;
+      total = baseAmount;
+    } else {
+      taxableValue = rate * quantity;
+      cgstAmount = (taxableValue * cgstPercentage) / 100;
+      sgstAmount = (taxableValue * sgstPercentage) / 100;
+      total = taxableValue + cgstAmount + sgstAmount;
+    }
     
     const newItem: InvoiceItem = {
       productId: product?.id || null,
@@ -223,8 +238,22 @@ export default function CreateInvoice() {
         };
       });
       
-      setItems(recalculatedItems);
+      // Only update if values actually changed to prevent unnecessary re-renders
+      const hasChanges = recalculatedItems.some((newItem, index) => {
+        const oldItem = items[index];
+        return (
+          Math.abs(newItem.taxableValue - oldItem.taxableValue) > 0.001 ||
+          Math.abs(newItem.cgstAmount - oldItem.cgstAmount) > 0.001 ||
+          Math.abs(newItem.sgstAmount - oldItem.sgstAmount) > 0.001 ||
+          Math.abs(newItem.total - oldItem.total) > 0.001
+        );
+      });
+      
+      if (hasChanges) {
+        setItems(recalculatedItems);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentMode]);
 
   const handleSave = async () => {

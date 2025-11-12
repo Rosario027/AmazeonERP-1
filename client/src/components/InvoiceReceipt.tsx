@@ -1,4 +1,5 @@
 import { SHOP_INFO } from "@shared/shopInfo";
+import { useState } from "react";
 import logoImg from "@assets/1762677792449-0d76ba93-0eba-48fa-927f-62011c24e28f_1_1762963626825.jpg";
 
 interface InvoiceReceiptProps {
@@ -32,6 +33,7 @@ export function InvoiceReceipt({
   paid = 0,
 }: InvoiceReceiptProps) {
   const balance = grandTotal - paid;
+  const [logoError, setLogoError] = useState(false);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-IN", {
@@ -82,16 +84,19 @@ export function InvoiceReceipt({
       }}>
         {/* Header with Logo */}
         <div style={{ textAlign: "center", marginBottom: "10px" }}>
-          <img 
-            src={logoImg} 
-            alt={SHOP_INFO.name}
-            style={{
-              maxWidth: "60px",
-              maxHeight: "60px",
-              margin: "0 auto 8px",
-              display: "block",
-            }}
-          />
+          {!logoError && (
+            <img 
+              src={logoImg} 
+              alt={SHOP_INFO.name}
+              onError={() => setLogoError(true)}
+              style={{
+                maxWidth: "60px",
+                maxHeight: "60px",
+                margin: "0 auto 8px",
+                display: "block",
+              }}
+            />
+          )}
           <div style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "4px" }}>
             {SHOP_INFO.name}
           </div>
