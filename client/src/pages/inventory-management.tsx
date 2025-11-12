@@ -75,7 +75,12 @@ export default function InventoryManagement() {
       return;
     }
 
-    addMutation.mutate(formData);
+    const dataToSend = {
+      ...formData,
+      quantity: parseInt(formData.quantity) || 0,
+    };
+
+    addMutation.mutate(dataToSend);
   };
 
   const editMutation = useMutation({
@@ -111,7 +116,12 @@ export default function InventoryManagement() {
       return;
     }
 
-    editMutation.mutate({ id: editingProduct.id, data: formData });
+    const dataToSend = {
+      ...formData,
+      quantity: parseInt(formData.quantity) || 0,
+    };
+
+    editMutation.mutate({ id: editingProduct.id, data: dataToSend });
   };
 
   const deleteMutation = useMutation({
@@ -229,6 +239,18 @@ export default function InventoryManagement() {
                     data-testid="input-gst-percentage"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Stock Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  placeholder="0"
+                  data-testid="input-product-quantity"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="comments">Comments / Notes</Label>
@@ -387,6 +409,18 @@ export default function InventoryManagement() {
                   placeholder="Enter GST %"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-quantity">Stock Quantity</Label>
+              <Input
+                id="edit-quantity"
+                type="number"
+                min="0"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                placeholder="0"
+                data-testid="input-edit-product-quantity"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-comments">Comments / Notes</Label>

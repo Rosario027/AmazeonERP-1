@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Edit, Search, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 interface Invoice {
   id: number;
@@ -22,6 +23,7 @@ interface Invoice {
 
 export default function SalesOverview() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [searchParams, setSearchParams] = useState<{ startDate: string; endDate: string } | null>(null);
@@ -151,7 +153,12 @@ export default function SalesOverview() {
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" data-testid={`button-edit-${invoice.id}`}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setLocation(`/create-invoice?edit=${invoice.id}`)}
+                            data-testid={`button-edit-${invoice.id}`}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </div>

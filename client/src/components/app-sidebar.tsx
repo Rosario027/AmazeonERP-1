@@ -1,4 +1,4 @@
-import { FileText, BarChart3, Package, FileSpreadsheet, TrendingUp, LogOut, DollarSign } from "lucide-react";
+import { FileText, BarChart3, Package, FileSpreadsheet, TrendingUp, LogOut, DollarSign, Warehouse } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +46,11 @@ export function AppSidebar() {
       title: "Inventory Management",
       url: "/admin/inventory",
       icon: Package,
+    },
+    {
+      title: "Stock Report",
+      url: "/admin/stock-report",
+      icon: Warehouse,
     },
     {
       title: "B2B Invoice",

@@ -605,6 +605,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/reports/stock", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Stock Report");
+
+      worksheet.mergeCells("A1:H1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `Stock Report - Generated on ${new Date().toLocaleDateString("en-IN")}`;
+      titleCell.font = { size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center" };
+
+      worksheet.addRow([]);
+      worksheet.addRow(["Summary"]);
+      worksheet.addRow(["Total Products", products.length]);
+      const lowStockThreshold = 10;
+      const outOfStock = products.filter(p => (p.quantity || 0) === 0).length;
+      const lowStock = products.filter(p => (p.quantity || 0) > 0 && (p.quantity || 0) <= lowStockThreshold).length;
+      worksheet.addRow(["Out of Stock", outOfStock]);
+      worksheet.addRow(["Low Stock (≤10)", lowStock]);
+
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      const headerRow = worksheet.addRow([
+        "Product Name",
+        "HSN Code",
+        "Category",
+        "Rate (₹)",
+        "GST %",
+        "Stock Quantity",
+        "Status",
+        "Comments",
+      ]);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE0E0E0" },
+      };
+
+      products.forEach((product) => {
+        const quantity = product.quantity || 0;
+        const status = quantity === 0 ? "Out of Stock" : quantity <= lowStockThreshold ? "Low Stock" : "In Stock";
+
+        worksheet.addRow([
+          product.name,
+          product.hsnCode,
+          product.category || "-",
+          parseFloat(product.rate).toFixed(2),
+          product.gstPercentage,
+          quantity,
+          status,
+          product.comments || "-",
+        ]);
+      });
+
+      if (worksheet.columns) {
+        worksheet.columns.forEach((column) => {
+          if (column && column.eachCell) {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: false }, (cell) => {
+              const cellValue = cell.value ? cell.value.toString() : "";
+              maxLength = Math.max(maxLength, cellValue.length);
+            });
+            column.width = Math.min(Math.max(maxLength + 2, 12), 40);
+          }
+        });
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      const date = new Date().toISOString().split("T")[0];
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=stock-report-${date}.xlsx`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

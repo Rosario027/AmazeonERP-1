@@ -11,7 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InvoiceItemDialog } from "@/components/InvoiceItemDialog";
 import { InvoiceReceipt } from "@/components/InvoiceReceipt";
-import { useLocation } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 
 interface InvoiceItem {
   productId: number | null;
@@ -30,21 +30,59 @@ interface InvoiceItem {
 export default function CreateInvoice() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
+  const urlParams = new URLSearchParams(searchString);
+  const editInvoiceId = urlParams.get('edit');
+  const isEditing = !!editInvoiceId;
+
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Cash");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [invoiceNumberForEdit, setInvoiceNumberForEdit] = useState("");
+
+  const { data: existingInvoice } = useQuery<any>({
+    queryKey: [`/api/invoices/${editInvoiceId || 'new'}`],
+    enabled: isEditing && !!editInvoiceId,
+  });
+
+  useEffect(() => {
+    if (existingInvoice && isEditing) {
+      setCustomerName(existingInvoice.customerName || "");
+      setCustomerPhone(existingInvoice.customerPhone || "");
+      setPaymentMode(existingInvoice.paymentMode || "Cash");
+      setInvoiceNumberForEdit(existingInvoice.invoiceNumber || "");
+      
+      if (existingInvoice.items && existingInvoice.items.length > 0) {
+        const formattedItems = existingInvoice.items.map((item: any) => ({
+          productId: item.productId,
+          itemName: item.itemName,
+          hsnCode: item.hsnCode,
+          rate: item.rate,
+          quantity: item.quantity,
+          taxableValue: parseFloat(item.taxableValue),
+          cgstPercentage: parseFloat(item.cgstPercentage),
+          cgstAmount: parseFloat(item.cgstAmount),
+          sgstPercentage: parseFloat(item.sgstPercentage),
+          sgstAmount: parseFloat(item.sgstAmount),
+          total: parseFloat(item.total),
+        }));
+        setItems(formattedItems);
+      }
+    }
+  }, [existingInvoice, isEditing]);
 
   const { data: invoiceNumberData } = useQuery<{ invoiceNumber: string }>({
     queryKey: ["/api/invoices/next-number?type=B2C"],
+    enabled: !isEditing,
   });
 
   const { data: products = [], isLoading: productsLoading } = useQuery<any[]>({
     queryKey: ["/api/products"],
   });
 
-  const invoiceNumber = invoiceNumberData?.invoiceNumber || "";
+  const invoiceNumber = isEditing ? invoiceNumberForEdit : (invoiceNumberData?.invoiceNumber || "");
 
   const handleAddItem = (item: {
     productName: string;
@@ -105,7 +143,11 @@ export default function CreateInvoice() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/invoices", data);
+      if (isEditing && editInvoiceId) {
+        return await apiRequest("PATCH", `/api/invoices/${editInvoiceId}`, data);
+      } else {
+        return await apiRequest("POST", "/api/invoices", data);
+      }
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2C"] });
@@ -113,7 +155,7 @@ export default function CreateInvoice() {
       const invoiceId = data.id;
       toast({
         title: "Success",
-        description: "Invoice saved successfully. Click to print receipt.",
+        description: isEditing ? "Invoice updated successfully. Click to print receipt." : "Invoice saved successfully. Click to print receipt.",
         action: (
           <Button 
             size="sm" 
@@ -125,15 +167,17 @@ export default function CreateInvoice() {
           </Button>
         ),
       });
-      setCustomerName("");
-      setCustomerPhone("");
-      setItems([]);
+      if (!isEditing) {
+        setCustomerName("");
+        setCustomerPhone("");
+        setItems([]);
+      }
     },
     onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save invoice",
+        description: isEditing ? "Failed to update invoice" : "Failed to save invoice",
       });
     },
   });
@@ -226,8 +270,8 @@ export default function CreateInvoice() {
       
       <div className="p-8 max-w-7xl mx-auto no-print">
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold mb-2">Create Invoice</h1>
-          <p className="text-muted-foreground">Generate a new customer invoice</p>
+          <h1 className="text-3xl font-semibold mb-2">{isEditing ? "Edit Invoice" : "Create Invoice"}</h1>
+          <p className="text-muted-foreground">{isEditing ? "Update existing customer invoice" : "Generate a new customer invoice"}</p>
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

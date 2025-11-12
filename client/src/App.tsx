@@ -16,6 +16,7 @@ import InventoryManagement from "@/pages/inventory-management";
 import B2BInvoice from "@/pages/b2b-invoice";
 import Reports from "@/pages/reports";
 import Expenses from "@/pages/expenses";
+import StockReport from "@/pages/stock-report";
 import PrintInvoice from "@/pages/print-invoice";
 import NotFound from "@/pages/not-found";
 
@@ -91,6 +92,9 @@ function renderMainApp(user: any) {
             </Route>
             <Route path="/admin/expenses">
               {() => <ProtectedRoute component={Expenses} adminOnly />}
+            </Route>
+            <Route path="/admin/stock-report">
+              {() => <ProtectedRoute component={StockReport} adminOnly />}
             </Route>
             <Route path="/">
               {() => user.role === "admin" ? <Redirect to="/admin/dashboard" /> : <Redirect to="/create-invoice" />}
