@@ -177,6 +177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cgstAmount = parseFloat(item.cgstAmount) || 0;
         const sgstAmount = parseFloat(item.sgstAmount) || 0;
         const itemTotal = parseFloat(item.total) || 0;
+        const gstPercentage = parseFloat(item.gstPercentage) || 0;
+        const gstAmount = parseFloat(item.gstAmount) || 0;
 
         subtotal += taxableValue;
         totalGst += (cgstAmount + sgstAmount);
@@ -187,6 +189,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hsnCode: item.hsnCode,
           rate: parseFloat(item.rate).toString(),
           quantity: item.quantity,
+          gstPercentage: gstPercentage.toString(),
+          gstAmount: gstAmount.toString(),
           taxableValue: taxableValue.toString(),
           cgstPercentage: parseFloat(item.cgstPercentage).toString(),
           cgstAmount: cgstAmount.toString(),
@@ -237,6 +241,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cgstAmount = parseFloat(item.cgstAmount) || 0;
           const sgstAmount = parseFloat(item.sgstAmount) || 0;
           const itemTotal = parseFloat(item.total) || 0;
+          const gstPercentage = parseFloat(item.gstPercentage) || 0;
+          const gstAmount = parseFloat(item.gstAmount) || 0;
 
           subtotal += taxableValue;
           totalGst += (cgstAmount + sgstAmount);
@@ -247,6 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             hsnCode: item.hsnCode,
             rate: parseFloat(item.rate).toString(),
             quantity: item.quantity,
+            gstPercentage: gstPercentage.toString(),
+            gstAmount: gstAmount.toString(),
             taxableValue: taxableValue.toString(),
             cgstPercentage: parseFloat(item.cgstPercentage).toString(),
             cgstAmount: cgstAmount.toString(),

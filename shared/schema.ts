@@ -47,6 +47,8 @@ export const invoiceItems = pgTable("invoice_items", {
   hsnCode: text("hsn_code").notNull(),
   rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
+  gstPercentage: decimal("gst_percentage", { precision: 5, scale: 2 }).notNull(),
+  gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).notNull(),
   taxableValue: decimal("taxable_value", { precision: 10, scale: 2 }).notNull(),
   cgstPercentage: decimal("cgst_percentage", { precision: 5, scale: 2 }).notNull(),
   cgstAmount: decimal("cgst_amount", { precision: 10, scale: 2 }).notNull(),

@@ -210,6 +210,8 @@ export default function CreateInvoice() {
         
         return {
           ...item,
+          gstPercentage: totalGstPercentage,
+          gstAmount: cgstAmount + sgstAmount,
           taxableValue,
           cgstAmount,
           sgstAmount,
@@ -242,6 +244,8 @@ export default function CreateInvoice() {
         hsnCode: item.hsnCode,
         rate: item.rate,
         quantity: item.quantity,
+        gstPercentage: (item.cgstPercentage + item.sgstPercentage).toFixed(2),
+        gstAmount: (item.cgstAmount + item.sgstAmount).toFixed(2),
         taxableValue: item.taxableValue.toFixed(2),
         cgstPercentage: item.cgstPercentage.toFixed(2),
         cgstAmount: item.cgstAmount.toFixed(2),
