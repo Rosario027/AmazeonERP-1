@@ -215,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(invoice);
     } catch (error) {
+      console.error("Error creating invoice:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

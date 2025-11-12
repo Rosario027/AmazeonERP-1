@@ -107,17 +107,27 @@ export default function CreateInvoice() {
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/invoices", data);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2C"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      const invoiceId = data.id;
       toast({
         title: "Success",
-        description: "Invoice saved successfully",
+        description: "Invoice saved successfully. Click to print receipt.",
+        action: (
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setLocation(`/print-invoice/${invoiceId}`)}
+            data-testid="button-print-invoice"
+          >
+            Print
+          </Button>
+        ),
       });
       setCustomerName("");
       setCustomerPhone("");
       setItems([]);
-      setLocation("/create-invoice");
     },
     onError: () => {
       toast({

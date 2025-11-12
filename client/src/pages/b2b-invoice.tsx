@@ -108,18 +108,28 @@ export default function B2BInvoice() {
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/invoices", data);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2B"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      const invoiceId = data.id;
       toast({
         title: "Success",
-        description: "B2B Invoice saved successfully",
+        description: "B2B Invoice saved successfully. Click to print receipt.",
+        action: (
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setLocation(`/print-invoice/${invoiceId}`)}
+            data-testid="button-print-invoice"
+          >
+            Print
+          </Button>
+        ),
       });
       setCustomerName("");
       setCustomerPhone("");
       setCustomerGst("");
       setItems([]);
-      setLocation("/b2b-invoice");
     },
     onError: () => {
       toast({

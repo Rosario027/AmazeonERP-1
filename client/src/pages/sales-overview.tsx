@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Search } from "lucide-react";
+import { Edit, Search, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 
@@ -142,9 +142,19 @@ export default function SalesOverview() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" data-testid={`button-edit-${invoice.id}`}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => window.open(`/print-invoice/${invoice.id}`, '_blank')}
+                            data-testid={`button-print-${invoice.id}`}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" data-testid={`button-edit-${invoice.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
