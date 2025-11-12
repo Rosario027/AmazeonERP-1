@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-export default function SalesReport() {
+export default function Reports() {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -58,9 +59,15 @@ export default function SalesReport() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold mb-2">Sales Report</h1>
-        <p className="text-muted-foreground">Download comprehensive sales analytics</p>
+        <h1 className="text-3xl font-semibold mb-2">Reports</h1>
+        <p className="text-muted-foreground">Download and analyze business reports</p>
       </div>
+
+      <Tabs defaultValue="sales" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="sales" data-testid="tab-sales-report">Sales Report</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sales">
 
       <Card>
         <CardHeader>
@@ -119,6 +126,8 @@ export default function SalesReport() {
           </Button>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

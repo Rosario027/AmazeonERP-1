@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 interface Product {
   id: number;
   name: string;
+  hsnCode: string;
   category: string | null;
   rate: string;
   gstPercentage: string;
@@ -29,6 +30,7 @@ export default function InventoryManagement() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    hsnCode: "",
     category: "",
     rate: "",
     gstPercentage: "18",
@@ -50,7 +52,7 @@ export default function InventoryManagement() {
         description: "Product added successfully",
       });
       setIsAddDialogOpen(false);
-      setFormData({ name: "", category: "", rate: "", gstPercentage: "18", comments: "" });
+      setFormData({ name: "", hsnCode: "", category: "", rate: "", gstPercentage: "18", comments: "" });
     },
     onError: () => {
       toast({
@@ -62,7 +64,7 @@ export default function InventoryManagement() {
   });
 
   const handleAdd = async () => {
-    if (!formData.name || !formData.rate) {
+    if (!formData.name || !formData.hsnCode || !formData.rate) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -86,7 +88,7 @@ export default function InventoryManagement() {
       });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
-      setFormData({ name: "", category: "", rate: "", gstPercentage: "18", comments: "" });
+      setFormData({ name: "", hsnCode: "", category: "", rate: "", gstPercentage: "18", comments: "" });
     },
     onError: () => {
       toast({
@@ -98,7 +100,7 @@ export default function InventoryManagement() {
   });
 
   const handleEdit = async () => {
-    if (!editingProduct || !formData.name || !formData.rate) {
+    if (!editingProduct || !formData.name || !formData.hsnCode || !formData.rate) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -139,6 +141,7 @@ export default function InventoryManagement() {
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      hsnCode: product.hsnCode,
       category: product.category || "",
       rate: product.rate,
       gstPercentage: product.gstPercentage,
@@ -174,6 +177,16 @@ export default function InventoryManagement() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter product name"
                   data-testid="input-product-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hsnCode">HSN Code <span className="text-destructive">*</span></Label>
+                <Input
+                  id="hsnCode"
+                  value={formData.hsnCode}
+                  onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                  placeholder="Enter HSN code (e.g. 8471)"
+                  data-testid="input-hsn-code"
                 />
               </div>
               <div className="space-y-2">
@@ -250,6 +263,7 @@ export default function InventoryManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="font-semibold">Product Name</TableHead>
+                    <TableHead className="font-semibold">HSN Code</TableHead>
                     <TableHead className="font-semibold">Category</TableHead>
                     <TableHead className="font-semibold text-right">Rate (₹)</TableHead>
                     <TableHead className="font-semibold text-center">GST %</TableHead>
@@ -260,6 +274,9 @@ export default function InventoryManagement() {
                   {products.map((product) => (
                     <TableRow key={product.id} className="hover-elevate" data-testid={`row-product-${product.id}`}>
                       <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{product.hsnCode}</Badge>
+                      </TableCell>
                       <TableCell>
                         {product.category ? (
                           <Badge variant="secondary">{product.category}</Badge>
@@ -313,6 +330,16 @@ export default function InventoryManagement() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter product name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-hsnCode">HSN Code <span className="text-destructive">*</span></Label>
+              <Input
+                id="edit-hsnCode"
+                value={formData.hsnCode}
+                onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                placeholder="Enter HSN code (e.g. 8471)"
+                data-testid="input-edit-hsn-code"
               />
             </div>
             <div className="space-y-2">

@@ -14,7 +14,7 @@ import SalesOverview from "@/pages/sales-overview";
 import AdminDashboard from "@/pages/admin-dashboard";
 import InventoryManagement from "@/pages/inventory-management";
 import B2BInvoice from "@/pages/b2b-invoice";
-import SalesReport from "@/pages/sales-report";
+import Reports from "@/pages/reports";
 import Expenses from "@/pages/expenses";
 import NotFound from "@/pages/not-found";
 
@@ -75,8 +75,8 @@ function Router() {
               <Route path="/admin/b2b-invoice">
                 {() => <ProtectedRoute component={B2BInvoice} adminOnly />}
               </Route>
-              <Route path="/admin/sales-report">
-                {() => <ProtectedRoute component={SalesReport} adminOnly />}
+              <Route path="/admin/reports">
+                {() => <ProtectedRoute component={Reports} adminOnly />}
               </Route>
               <Route path="/admin/expenses">
                 {() => <ProtectedRoute component={Expenses} adminOnly />}

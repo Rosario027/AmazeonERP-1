@@ -33,7 +33,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
       });
     } catch (error) {
-      console.error("Login error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -44,7 +43,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getProducts();
       res.json(products);
     } catch (error) {
-      console.error("Get products error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -58,21 +56,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(product);
     } catch (error) {
-      console.error("Get product error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
 
   app.post("/api/products", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const { name, category, rate, gstPercentage, comments } = req.body;
+      const { name, hsnCode, category, rate, gstPercentage, comments } = req.body;
       
-      if (!name || !rate || !gstPercentage) {
+      if (!name || !hsnCode || !rate || !gstPercentage) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
       const product = await storage.createProduct({
         name,
+        hsnCode,
         category: category || null,
         rate,
         gstPercentage,
@@ -81,7 +79,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(product);
     } catch (error) {
-      console.error("Create product error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -89,10 +86,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/products/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { name, category, rate, gstPercentage, comments } = req.body;
+      const { name, hsnCode, category, rate, gstPercentage, comments } = req.body;
 
       const product = await storage.updateProduct(id, {
         name,
+        hsnCode,
         category: category || null,
         rate,
         gstPercentage,
@@ -105,7 +103,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(product);
     } catch (error) {
-      console.error("Update product error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -116,7 +113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteProduct(id);
       res.status(204).send();
     } catch (error) {
-      console.error("Delete product error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -132,7 +128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoiceNumber = await storage.getNextInvoiceNumber(type);
       res.json({ invoiceNumber });
     } catch (error) {
-      console.error("Get next invoice number error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -146,7 +141,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(invoices);
     } catch (error) {
-      console.error("Get invoices error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -160,7 +154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(invoice);
     } catch (error) {
-      console.error("Get invoice error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -175,38 +168,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const invoiceNumber = await storage.getNextInvoiceNumber(invoiceType);
 
-      // Calculate totals
+      // Calculate totals from new CGST/SGST structure
       let subtotal = 0;
       let totalGst = 0;
 
       const invoiceItems = items.map((item: any) => {
-        const rate = parseFloat(item.rate) || 0;
-        const qty = item.quantity || 0;
-        const gstPercentage = parseFloat(item.gstPercentage) || 0;
+        const taxableValue = parseFloat(item.taxableValue) || 0;
+        const cgstAmount = parseFloat(item.cgstAmount) || 0;
+        const sgstAmount = parseFloat(item.sgstAmount) || 0;
+        const itemTotal = parseFloat(item.total) || 0;
 
-        let itemSubtotal = 0;
-        let itemGst = 0;
-
-        if (paymentMode === "Cash") {
-          const itemTotal = rate * qty;
-          itemGst = (itemTotal * gstPercentage) / (100 + gstPercentage);
-          itemSubtotal = itemTotal - itemGst;
-        } else {
-          itemSubtotal = rate * qty;
-          itemGst = (itemSubtotal * gstPercentage) / 100;
-        }
-
-        subtotal += itemSubtotal;
-        totalGst += itemGst;
+        subtotal += taxableValue;
+        totalGst += (cgstAmount + sgstAmount);
 
         return {
           productId: item.productId ? parseInt(item.productId) : null,
           itemName: item.itemName,
-          rate: rate.toString(),
-          quantity: qty,
-          gstPercentage: gstPercentage.toString(),
-          gstAmount: itemGst.toString(),
-          total: (itemSubtotal + itemGst).toString(),
+          hsnCode: item.hsnCode,
+          rate: parseFloat(item.rate).toString(),
+          quantity: item.quantity,
+          taxableValue: taxableValue.toString(),
+          cgstPercentage: parseFloat(item.cgstPercentage).toString(),
+          cgstAmount: cgstAmount.toString(),
+          sgstPercentage: parseFloat(item.sgstPercentage).toString(),
+          sgstAmount: sgstAmount.toString(),
+          total: itemTotal.toString(),
         };
       });
 
@@ -229,7 +215,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(invoice);
     } catch (error) {
-      console.error("Create invoice error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -247,33 +232,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let totalGst = 0;
 
         const invoiceItems = items.map((item: any) => {
-          const rate = parseFloat(item.rate) || 0;
-          const qty = item.quantity || 0;
-          const gstPercentage = parseFloat(item.gstPercentage) || 0;
+          const taxableValue = parseFloat(item.taxableValue) || 0;
+          const cgstAmount = parseFloat(item.cgstAmount) || 0;
+          const sgstAmount = parseFloat(item.sgstAmount) || 0;
+          const itemTotal = parseFloat(item.total) || 0;
 
-          let itemSubtotal = 0;
-          let itemGst = 0;
-
-          if (paymentMode === "Cash") {
-            const itemTotal = rate * qty;
-            itemGst = (itemTotal * gstPercentage) / (100 + gstPercentage);
-            itemSubtotal = itemTotal - itemGst;
-          } else {
-            itemSubtotal = rate * qty;
-            itemGst = (itemSubtotal * gstPercentage) / 100;
-          }
-
-          subtotal += itemSubtotal;
-          totalGst += itemGst;
+          subtotal += taxableValue;
+          totalGst += (cgstAmount + sgstAmount);
 
           return {
             productId: item.productId ? parseInt(item.productId) : null,
             itemName: item.itemName,
-            rate: rate.toString(),
-            quantity: qty,
-            gstPercentage: gstPercentage.toString(),
-            gstAmount: itemGst.toString(),
-            total: (itemSubtotal + itemGst).toString(),
+            hsnCode: item.hsnCode,
+            rate: parseFloat(item.rate).toString(),
+            quantity: item.quantity,
+            taxableValue: taxableValue.toString(),
+            cgstPercentage: parseFloat(item.cgstPercentage).toString(),
+            cgstAmount: cgstAmount.toString(),
+            sgstPercentage: parseFloat(item.sgstPercentage).toString(),
+            sgstAmount: sgstAmount.toString(),
+            total: itemTotal.toString(),
           };
         });
 
@@ -307,7 +285,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(invoice);
       }
     } catch (error) {
-      console.error("Update invoice error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -322,7 +299,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(expenses);
     } catch (error) {
-      console.error("Get expenses error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -343,7 +319,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(expense);
     } catch (error) {
-      console.error("Create expense error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -365,7 +340,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(expense);
     } catch (error) {
-      console.error("Update expense error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -376,7 +350,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteExpense(id);
       res.status(204).send();
     } catch (error) {
-      console.error("Delete expense error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -387,7 +360,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getSalesStats();
       res.json(stats);
     } catch (error) {
-      console.error("Get stats error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -401,23 +373,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing date range" });
       }
 
-      const invoices = await storage.getInvoices({
+      const invoiceHeaders = await storage.getInvoices({
         startDate: startDate as string,
         endDate: endDate as string,
       });
 
+      // Fetch invoices with items
+      const invoices = await Promise.all(
+        invoiceHeaders.map(inv => storage.getInvoiceWithItems(inv.id))
+      );
+      const invoicesWithItems = invoices.filter((inv): inv is NonNullable<typeof inv> => inv !== undefined);
+
       // Calculate summary data
-      const totalSales = invoices.reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
-      const b2bSales = invoices
+      const totalSales = invoicesWithItems.reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
+      const b2bSales = invoicesWithItems
         .filter((inv) => inv.invoiceType === "B2B")
         .reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
-      const b2cSales = invoices
+      const b2cSales = invoicesWithItems
         .filter((inv) => inv.invoiceType === "B2C")
         .reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
-      const cashSales = invoices
+      const cashSales = invoicesWithItems
         .filter((inv) => inv.paymentMode === "Cash")
         .reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
-      const onlineSales = invoices
+      const onlineSales = invoicesWithItems
         .filter((inv) => inv.paymentMode === "Online")
         .reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
 
@@ -426,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const worksheet = workbook.addWorksheet("Sales Report");
 
       // Add title
-      worksheet.mergeCells("A1:F1");
+      worksheet.mergeCells("A1:O1");
       const titleCell = worksheet.getCell("A1");
       titleCell.value = `Sales Report (${startDate} to ${endDate})`;
       titleCell.font = { size: 16, bold: true };
@@ -440,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       worksheet.addRow(["B2C Sales", b2cSales.toFixed(2)]);
       worksheet.addRow(["Cash Sales", cashSales.toFixed(2)]);
       worksheet.addRow(["Online Sales", onlineSales.toFixed(2)]);
-      worksheet.addRow(["Total Invoices", invoices.length]);
+      worksheet.addRow(["Total Invoices", invoicesWithItems.length]);
 
       // Add invoice details section
       worksheet.addRow([]);
@@ -451,7 +429,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Customer",
         "Type",
         "Payment Mode",
-        "Amount",
+        "Item Name",
+        "HSN Code",
+        "Qty",
+        "Rate",
+        "Taxable Value",
+        "CGST %",
+        "CGST Amount",
+        "SGST %",
+        "SGST Amount",
+        "Total",
       ]);
       headerRow.font = { bold: true };
       headerRow.fill = {
@@ -460,22 +447,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fgColor: { argb: "FFE0E0E0" },
       };
 
-      // Add invoice data
-      invoices.forEach((inv) => {
-        worksheet.addRow([
-          inv.invoiceNumber,
-          new Date(inv.createdAt).toLocaleDateString("en-IN"),
-          inv.customerName,
-          inv.invoiceType,
-          inv.paymentMode,
-          parseFloat(inv.grandTotal).toFixed(2),
-        ]);
+      // Add invoice data with line items
+      invoicesWithItems.forEach((inv) => {
+        if (inv.items && inv.items.length > 0) {
+          inv.items.forEach((item: any, index: number) => {
+            worksheet.addRow([
+              index === 0 ? inv.invoiceNumber : "",
+              index === 0 ? new Date(inv.createdAt).toLocaleDateString("en-IN") : "",
+              index === 0 ? inv.customerName : "",
+              index === 0 ? inv.invoiceType : "",
+              index === 0 ? inv.paymentMode : "",
+              item.itemName || "",
+              item.hsnCode || "",
+              item.quantity || 0,
+              parseFloat(item.rate || 0).toFixed(2),
+              parseFloat(item.taxableValue || 0).toFixed(2),
+              parseFloat(item.cgstPercentage || 0).toFixed(2),
+              parseFloat(item.cgstAmount || 0).toFixed(2),
+              parseFloat(item.sgstPercentage || 0).toFixed(2),
+              parseFloat(item.sgstAmount || 0).toFixed(2),
+              parseFloat(item.total || 0).toFixed(2),
+            ]);
+          });
+        } else {
+          worksheet.addRow([
+            inv.invoiceNumber,
+            new Date(inv.createdAt).toLocaleDateString("en-IN"),
+            inv.customerName,
+            inv.invoiceType,
+            inv.paymentMode,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            parseFloat(inv.grandTotal).toFixed(2),
+          ]);
+        }
       });
 
       // Auto-fit columns
       if (worksheet.columns) {
         worksheet.columns.forEach((column) => {
-          if (column) {
+          if (column && column.eachCell) {
             let maxLength = 0;
             column.eachCell({ includeEmpty: false }, (cell) => {
               const cellValue = cell.value ? cell.value.toString() : "";
@@ -493,7 +511,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader("Content-Disposition", `attachment; filename=sales-report-${startDate}-to-${endDate}.xlsx`);
       res.send(buffer);
     } catch (error) {
-      console.error("Generate report error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

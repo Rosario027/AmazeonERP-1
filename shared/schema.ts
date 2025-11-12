@@ -14,10 +14,11 @@ export const users = pgTable("users", {
 export const products = pgTable("products", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
+  hsnCode: text("hsn_code").notNull(),
   category: text("category"),
   rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
-  gstPercentage: decimal("gst_percentage", { precision: 5, scale: 2 }).notNull(), // 5 or 18
-  comments: text("comments"), // Internal notes for lot number, etc.
+  gstPercentage: decimal("gst_percentage", { precision: 5, scale: 2 }).notNull(),
+  comments: text("comments"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -42,10 +43,14 @@ export const invoiceItems = pgTable("invoice_items", {
   invoiceId: integer("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
   productId: integer("product_id").references(() => products.id),
   itemName: text("item_name").notNull(),
+  hsnCode: text("hsn_code").notNull(),
   rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
-  gstPercentage: decimal("gst_percentage", { precision: 5, scale: 2 }).notNull(),
-  gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).notNull(),
+  taxableValue: decimal("taxable_value", { precision: 10, scale: 2 }).notNull(),
+  cgstPercentage: decimal("cgst_percentage", { precision: 5, scale: 2 }).notNull(),
+  cgstAmount: decimal("cgst_amount", { precision: 10, scale: 2 }).notNull(),
+  sgstPercentage: decimal("sgst_percentage", { precision: 5, scale: 2 }).notNull(),
+  sgstAmount: decimal("sgst_amount", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 

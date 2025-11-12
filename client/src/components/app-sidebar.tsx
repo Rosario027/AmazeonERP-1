@@ -48,8 +48,8 @@ export function AppSidebar() {
       icon: FileSpreadsheet,
     },
     {
-      title: "Sales Report",
-      url: "/admin/sales-report",
+      title: "Reports",
+      url: "/admin/reports",
       icon: FileSpreadsheet,
     },
     {

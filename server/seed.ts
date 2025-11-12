@@ -21,18 +21,18 @@ async function seed() {
     role: "user",
   }).onConflictDoNothing();
 
-  // Create sample products
+  // Create sample products with HSN codes
   const sampleProducts = [
-    { name: "Laptop", category: "Electronics", rate: "45000.00", gstPercentage: "18" },
-    { name: "Mouse", category: "Electronics", rate: "500.00", gstPercentage: "18" },
-    { name: "Keyboard", category: "Electronics", rate: "1200.00", gstPercentage: "18" },
-    { name: "Monitor", category: "Electronics", rate: "15000.00", gstPercentage: "18" },
-    { name: "Desk Chair", category: "Furniture", rate: "8000.00", gstPercentage: "18" },
-    { name: "Office Desk", category: "Furniture", rate: "12000.00", gstPercentage: "18" },
-    { name: "Notebook", category: "Stationery", rate: "50.00", gstPercentage: "5" },
-    { name: "Pen Set", category: "Stationery", rate: "150.00", gstPercentage: "5" },
-    { name: "Printer", category: "Electronics", rate: "8500.00", gstPercentage: "18" },
-    { name: "USB Drive 64GB", category: "Electronics", rate: "800.00", gstPercentage: "18" },
+    { name: "Laptop", hsnCode: "8471", category: "Electronics", rate: "45000.00", gstPercentage: "18" },
+    { name: "Mouse", hsnCode: "8471", category: "Electronics", rate: "500.00", gstPercentage: "18" },
+    { name: "Keyboard", hsnCode: "8471", category: "Electronics", rate: "1200.00", gstPercentage: "18" },
+    { name: "Monitor", hsnCode: "8528", category: "Electronics", rate: "15000.00", gstPercentage: "18" },
+    { name: "Desk Chair", hsnCode: "9401", category: "Furniture", rate: "8000.00", gstPercentage: "18" },
+    { name: "Office Desk", hsnCode: "9403", category: "Furniture", rate: "12000.00", gstPercentage: "18" },
+    { name: "Notebook", hsnCode: "4820", category: "Stationery", rate: "50.00", gstPercentage: "5" },
+    { name: "Pen Set", hsnCode: "9608", category: "Stationery", rate: "150.00", gstPercentage: "5" },
+    { name: "Printer", hsnCode: "8443", category: "Electronics", rate: "8500.00", gstPercentage: "18" },
+    { name: "USB Drive 64GB", hsnCode: "8523", category: "Electronics", rate: "800.00", gstPercentage: "18" },
   ];
 
   for (const product of sampleProducts) {

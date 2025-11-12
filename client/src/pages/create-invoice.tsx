@@ -15,9 +15,15 @@ import { InvoiceReceipt } from "@/components/InvoiceReceipt";
 interface InvoiceItem {
   productId: number | null;
   itemName: string;
+  hsnCode: string;
   rate: string;
   quantity: number;
-  gstPercentage: string;
+  taxableValue: number;
+  cgstPercentage: number;
+  cgstAmount: number;
+  sgstPercentage: number;
+  sgstAmount: number;
+  total: number;
 }
 
 export default function CreateInvoice() {
@@ -45,12 +51,29 @@ export default function CreateInvoice() {
     gstPercentage: string;
   }) => {
     const product = products.find((p) => p.name === item.productName);
+    const rate = parseFloat(item.rate);
+    const quantity = item.quantity;
+    const gstPercentage = parseFloat(item.gstPercentage);
+    
+    const taxableValue = rate * quantity;
+    const cgstPercentage = gstPercentage / 2;
+    const sgstPercentage = gstPercentage / 2;
+    const cgstAmount = (taxableValue * cgstPercentage) / 100;
+    const sgstAmount = (taxableValue * sgstPercentage) / 100;
+    const total = taxableValue + cgstAmount + sgstAmount;
+    
     const newItem: InvoiceItem = {
       productId: product?.id || null,
       itemName: item.productName,
+      hsnCode: product?.hsnCode || "",
       rate: item.rate,
-      quantity: item.quantity,
-      gstPercentage: item.gstPercentage,
+      quantity: quantity,
+      taxableValue: taxableValue,
+      cgstPercentage: cgstPercentage,
+      cgstAmount: cgstAmount,
+      sgstPercentage: sgstPercentage,
+      sgstAmount: sgstAmount,
+      total: total,
     };
     setItems((prev) => [newItem, ...prev]);
   };
@@ -61,30 +84,22 @@ export default function CreateInvoice() {
 
   const calculateTotals = () => {
     let subtotal = 0;
-    let totalGst = 0;
+    let totalCgst = 0;
+    let totalSgst = 0;
 
     items.forEach((item) => {
-      const rate = parseFloat(item.rate) || 0;
-      const qty = item.quantity || 0;
-      const gst = parseFloat(item.gstPercentage) || 0;
-      
-      if (paymentMode === "Cash") {
-        const itemTotal = rate * qty;
-        const gstAmount = (itemTotal * gst) / (100 + gst);
-        subtotal += itemTotal - gstAmount;
-        totalGst += gstAmount;
-      } else {
-        const baseAmount = rate * qty;
-        const gstAmount = (baseAmount * gst) / 100;
-        subtotal += baseAmount;
-        totalGst += gstAmount;
-      }
+      subtotal += item.taxableValue;
+      totalCgst += item.cgstAmount;
+      totalSgst += item.sgstAmount;
     });
 
-    return { subtotal, totalGst, grandTotal: subtotal + totalGst };
+    const totalGst = totalCgst + totalSgst;
+    const grandTotal = subtotal + totalGst;
+
+    return { subtotal, totalCgst, totalSgst, totalGst, grandTotal };
   };
 
-  const { subtotal, totalGst, grandTotal } = calculateTotals();
+  const { subtotal, totalCgst, totalSgst, totalGst, grandTotal } = calculateTotals();
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -128,9 +143,15 @@ export default function CreateInvoice() {
       items: items.map((item) => ({
         productId: item.productId,
         itemName: item.itemName,
+        hsnCode: item.hsnCode,
         rate: item.rate,
         quantity: item.quantity,
-        gstPercentage: item.gstPercentage,
+        taxableValue: item.taxableValue.toFixed(2),
+        cgstPercentage: item.cgstPercentage.toFixed(2),
+        cgstAmount: item.cgstAmount.toFixed(2),
+        sgstPercentage: item.sgstPercentage.toFixed(2),
+        sgstAmount: item.sgstAmount.toFixed(2),
+        total: item.total.toFixed(2),
       })),
     });
   };
@@ -225,35 +246,54 @@ export default function CreateInvoice() {
                   </Button>
                 </div>
 
-                {items.map((item, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Product</p>
-                          <p className="font-medium">{item.itemName}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Quantity</p>
-                          <p className="font-medium">{item.quantity}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Amount</p>
-                          <p className="font-medium">₹{(parseFloat(item.rate) * item.quantity).toFixed(2)}</p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeItem(index)}
-                        data-testid={`button-remove-item-${index}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+                {items.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">Item Name</th>
+                          <th className="text-left py-2">HSN</th>
+                          <th className="text-right py-2">Qty</th>
+                          <th className="text-right py-2">Rate</th>
+                          <th className="text-right py-2">Taxable Value</th>
+                          <th className="text-right py-2">CGST%</th>
+                          <th className="text-right py-2">CGST Amt</th>
+                          <th className="text-right py-2">SGST%</th>
+                          <th className="text-right py-2">SGST Amt</th>
+                          <th className="text-right py-2">Total</th>
+                          <th className="text-right py-2">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((item, index) => (
+                          <tr key={index} className="border-b hover-elevate">
+                            <td className="py-2 font-medium">{item.itemName}</td>
+                            <td className="py-2"><Badge variant="outline" className="text-xs">{item.hsnCode}</Badge></td>
+                            <td className="text-right py-2">{item.quantity}</td>
+                            <td className="text-right py-2">₹{parseFloat(item.rate).toFixed(2)}</td>
+                            <td className="text-right py-2 font-semibold">₹{item.taxableValue.toFixed(2)}</td>
+                            <td className="text-right py-2">{item.cgstPercentage.toFixed(2)}%</td>
+                            <td className="text-right py-2">₹{item.cgstAmount.toFixed(2)}</td>
+                            <td className="text-right py-2">{item.sgstPercentage.toFixed(2)}%</td>
+                            <td className="text-right py-2">₹{item.sgstAmount.toFixed(2)}</td>
+                            <td className="text-right py-2 font-bold">₹{item.total.toFixed(2)}</td>
+                            <td className="text-right py-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem(index)}
+                                data-testid={`button-remove-item-${index}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {items.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
@@ -273,11 +313,19 @@ export default function CreateInvoice() {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span>Subtotal:</span>
+                  <span>Taxable Value:</span>
                   <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>GST:</span>
+                  <span>CGST:</span>
+                  <span className="font-medium">₹{totalCgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>SGST:</span>
+                  <span className="font-medium">₹{totalSgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Total GST:</span>
                   <span className="font-medium">₹{totalGst.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-3">

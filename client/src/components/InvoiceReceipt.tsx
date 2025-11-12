@@ -8,8 +8,13 @@ interface InvoiceReceiptProps {
   date?: Date;
   items: Array<{
     itemName: string;
+    hsnCode: string;
     quantity: number;
     rate: string;
+    taxableValue: number;
+    cgstAmount: number;
+    sgstAmount: number;
+    total: number;
   }>;
   subtotal: number;
   grandTotal: number;
@@ -142,37 +147,22 @@ export function InvoiceReceipt({
 
         {/* Items Table */}
         <div style={{ marginBottom: "8px" }}>
-          <div style={{
-            display: "flex",
-            fontWeight: "bold",
-            fontSize: "11px",
-            borderBottom: "1px solid #000",
-            paddingBottom: "4px",
-            marginBottom: "4px",
-          }}>
-            <div style={{ flex: "2" }}>Description</div>
-            <div style={{ width: "40px", textAlign: "center" }}>Qty</div>
-            <div style={{ width: "60px", textAlign: "right" }}>Amount</div>
-          </div>
-
           {items.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                fontSize: "11px",
-                marginBottom: "4px",
-              }}
-            >
-              <div style={{ flex: "2", wordBreak: "break-word" }}>
-                {item.itemName}
+            <div key={index} style={{ marginBottom: "6px", fontSize: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "2px" }}>
+                <div style={{ flex: "1" }}>{item.itemName}</div>
+                <div style={{ textAlign: "right" }}>₹{item.total.toFixed(2)}</div>
               </div>
-              <div style={{ width: "40px", textAlign: "center" }}>
-                {item.quantity}
+              <div style={{ fontSize: "9px", color: "#333", marginBottom: "2px" }}>
+                HSN: {item.hsnCode} | Qty: {item.quantity} x ₹{parseFloat(item.rate).toFixed(2)}
               </div>
-              <div style={{ width: "60px", textAlign: "right" }}>
-                ₹{(parseFloat(item.rate) * item.quantity).toFixed(2)}
+              <div style={{ fontSize: "9px", color: "#555", display: "flex", justifyContent: "space-between" }}>
+                <span>Taxable: ₹{item.taxableValue.toFixed(2)}</span>
+                <span>CGST: ₹{item.cgstAmount.toFixed(2)} | SGST: ₹{item.sgstAmount.toFixed(2)}</span>
               </div>
+              {index < items.length - 1 && (
+                <div style={{ borderTop: "1px dotted #ccc", marginTop: "4px" }} />
+              )}
             </div>
           ))}
         </div>
@@ -185,9 +175,17 @@ export function InvoiceReceipt({
 
         {/* Totals */}
         <div style={{ fontSize: "11px", marginBottom: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-            <span>Subtotal:</span>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+            <span>Taxable Value:</span>
             <span>₹{subtotal.toFixed(2)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "10px" }}>
+            <span>CGST:</span>
+            <span>₹{items.reduce((sum, item) => sum + item.cgstAmount, 0).toFixed(2)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px" }}>
+            <span>SGST:</span>
+            <span>₹{items.reduce((sum, item) => sum + item.sgstAmount, 0).toFixed(2)}</span>
           </div>
           <div style={{
             display: "flex",
