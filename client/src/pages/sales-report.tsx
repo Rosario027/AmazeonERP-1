@@ -5,12 +5,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function SalesReport() {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const downloadMutation = useMutation({
+    mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
+      return await apiRequest("GET", `/api/reports/sales?startDate=${startDate}&endDate=${endDate}`);
+    },
+    onSuccess: async (response, variables) => {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sales-report-${variables.startDate}-to-${variables.endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Sales report downloaded successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate sales report",
+      });
+    },
+  });
 
   const handleDownload = async () => {
     if (!startDate || !endDate) {
@@ -22,37 +52,7 @@ export default function SalesReport() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/reports/sales?startDate=${startDate}&endDate=${endDate}`
-      );
-
-      if (!response.ok) throw new Error("Failed to generate report");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sales-report-${startDate}-to-${endDate}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Sales report downloaded successfully",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate sales report",
-      });
-    } finally {
-      setLoading(false);
-    }
+    downloadMutation.mutate({ startDate, endDate });
   };
 
   return (
@@ -111,11 +111,11 @@ export default function SalesReport() {
           <Button
             className="w-full h-12"
             onClick={handleDownload}
-            disabled={loading}
+            disabled={downloadMutation.isPending}
             data-testid="button-download-report"
           >
             <Download className="h-4 w-4 mr-2" />
-            {loading ? "Generating Report..." : "Download Excel Report"}
+            {downloadMutation.isPending ? "Generating Report..." : "Download Excel Report"}
           </Button>
         </CardContent>
       </Card>

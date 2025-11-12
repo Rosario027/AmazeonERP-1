@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Product {
   id: number;
@@ -20,8 +22,6 @@ interface Product {
 
 export default function InventoryManagement() {
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -32,25 +32,31 @@ export default function InventoryManagement() {
     gstPercentage: "18",
   });
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const { data: products = [], isLoading: loading } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+  });
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/products");
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
+  const addMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return await apiRequest("POST", "/api/products", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "Product added successfully",
+      });
+      setIsAddDialogOpen(false);
+      setFormData({ name: "", category: "", rate: "", gstPercentage: "18" });
+    },
+    onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch products",
+        description: "Failed to add product",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   const handleAdd = async () => {
     if (!formData.name || !formData.rate) {
@@ -62,31 +68,31 @@ export default function InventoryManagement() {
       return;
     }
 
-    try {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+    addMutation.mutate(formData);
+  };
 
-      if (!response.ok) throw new Error("Failed to add product");
-
+  const editMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof formData }) => {
+      return await apiRequest("PATCH", `/api/products/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
-        description: "Product added successfully",
+        description: "Product updated successfully",
       });
-
-      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
       setFormData({ name: "", category: "", rate: "", gstPercentage: "18" });
-      fetchProducts();
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add product",
+        description: "Failed to update product",
       });
-    }
-  };
+    },
+  });
 
   const handleEdit = async () => {
     if (!editingProduct || !formData.name || !formData.rate) {
@@ -98,56 +104,32 @@ export default function InventoryManagement() {
       return;
     }
 
-    try {
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Failed to update product");
-
-      toast({
-        title: "Success",
-        description: "Product updated successfully",
-      });
-
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-      setFormData({ name: "", category: "", rate: "", gstPercentage: "18" });
-      fetchProducts();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update product",
-      });
-    }
+    editMutation.mutate({ id: editingProduct.id, data: formData });
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
-
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete product");
-
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
         description: "Product deleted successfully",
       });
-
-      fetchProducts();
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to delete product",
       });
-    }
+    },
+  });
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    deleteMutation.mutate(id);
   };
 
   const openEditDialog = (product: Product) => {

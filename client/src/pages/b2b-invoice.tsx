@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Printer, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface InvoiceItem {
   productId: number | null;
@@ -18,43 +20,21 @@ interface InvoiceItem {
 
 export default function B2BInvoice() {
   const { toast } = useToast();
-  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerGst, setCustomerGst] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Online");
   const [items, setItems] = useState<InvoiceItem[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchInvoiceNumber();
-    fetchProducts();
-  }, []);
+  const { data: invoiceNumberData } = useQuery<{ invoiceNumber: string }>({
+    queryKey: ["/api/invoices/next-number?type=B2B"],
+  });
 
-  const fetchInvoiceNumber = async () => {
-    try {
-      const response = await fetch("/api/invoices/next-number?type=B2B");
-      const data = await response.json();
-      setInvoiceNumber(data.invoiceNumber);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate invoice number",
-      });
-    }
-  };
+  const { data: products = [], isLoading: productsLoading } = useQuery<any[]>({
+    queryKey: ["/api/products"],
+  });
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/products");
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error("Failed to fetch products", error);
-    }
-  };
+  const invoiceNumber = invoiceNumberData?.invoiceNumber || "";
 
   const addItem = () => {
     setItems([...items, { productId: null, itemName: "", rate: "", quantity: 1, gstPercentage: "18" }]);
@@ -107,6 +87,31 @@ export default function B2BInvoice() {
 
   const { subtotal, totalGst, grandTotal } = calculateTotals();
 
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/invoices", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2B"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Success",
+        description: "B2B Invoice saved successfully",
+      });
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerGst("");
+      setItems([]);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save invoice",
+      });
+    },
+  });
+
   const handleSave = async () => {
     if (!customerName || !customerPhone || !customerGst || items.length === 0) {
       toast({
@@ -117,48 +122,20 @@ export default function B2BInvoice() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await fetch("/api/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoiceType: "B2B",
-          customerName,
-          customerPhone,
-          customerGst,
-          paymentMode,
-          items: items.map((item) => ({
-            productId: item.productId,
-            itemName: item.itemName,
-            rate: item.rate,
-            quantity: item.quantity,
-            gstPercentage: item.gstPercentage,
-          })),
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to save invoice");
-
-      toast({
-        title: "Success",
-        description: "B2B Invoice saved successfully",
-      });
-
-      setCustomerName("");
-      setCustomerPhone("");
-      setCustomerGst("");
-      setItems([]);
-      fetchInvoiceNumber();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save invoice",
-      });
-    } finally {
-      setLoading(false);
-    }
+    saveMutation.mutate({
+      invoiceType: "B2B",
+      customerName,
+      customerPhone,
+      customerGst,
+      paymentMode,
+      items: items.map((item) => ({
+        productId: item.productId,
+        itemName: item.itemName,
+        rate: item.rate,
+        quantity: item.quantity,
+        gstPercentage: item.gstPercentage,
+      })),
+    });
   };
 
   return (
@@ -350,11 +327,11 @@ export default function B2BInvoice() {
                 <Button
                   className="w-full h-12"
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={saveMutation.isPending}
                   data-testid="button-save-b2b-invoice"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {loading ? "Saving..." : "Save Bill"}
+                  {saveMutation.isPending ? "Saving..." : "Save Bill"}
                 </Button>
                 <Button variant="outline" className="w-full h-12">
                   <Printer className="h-4 w-4 mr-2" />

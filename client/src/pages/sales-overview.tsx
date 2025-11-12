@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Edit, Search } from "lucide-react";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface Invoice {
   id: number;
@@ -21,40 +22,22 @@ interface Invoice {
 
 export default function SalesOverview() {
   const { toast } = useToast();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  const fetchInvoices = async () => {
-    setLoading(true);
-    try {
-      let url = "/api/invoices";
-      const params = new URLSearchParams();
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
-      if (params.toString()) url += `?${params.toString()}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-      setInvoices(data);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch invoices",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const buildQueryKey = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    return params.toString() ? `/api/invoices?${params.toString()}` : "/api/invoices";
   };
 
+  const { data: invoices = [], isLoading: loading, refetch } = useQuery<Invoice[]>({
+    queryKey: [buildQueryKey()],
+  });
+
   const handleSearch = () => {
-    fetchInvoices();
+    refetch();
   };
 
   const totalSales = invoices.reduce((sum, inv) => sum + parseFloat(inv.grandTotal), 0);
