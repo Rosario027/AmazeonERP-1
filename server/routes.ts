@@ -515,6 +515,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Expenses Report (admin only)
+  app.get("/api/reports/expenses", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Missing date range" });
+      }
+
+      const expenses = await storage.getExpenses({
+        startDate: startDate as string,
+        endDate: endDate as string,
+      });
+
+      const totalExpenses = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+      
+      const categoryTotals: Record<string, number> = {};
+      expenses.forEach((exp) => {
+        const category = exp.category || "Uncategorized";
+        categoryTotals[category] = (categoryTotals[category] || 0) + parseFloat(exp.amount);
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Expenses Report");
+
+      worksheet.mergeCells("A1:E1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `Expenses Report (${startDate} to ${endDate})`;
+      titleCell.font = { size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center" };
+
+      worksheet.addRow([]);
+      worksheet.addRow(["Summary"]);
+      worksheet.addRow(["Total Expenses", totalExpenses.toFixed(2)]);
+      worksheet.addRow(["Total Records", expenses.length]);
+
+      worksheet.addRow([]);
+      worksheet.addRow(["Category Breakdown"]);
+      Object.entries(categoryTotals).forEach(([category, total]) => {
+        worksheet.addRow([category, total.toFixed(2)]);
+      });
+
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      const headerRow = worksheet.addRow([
+        "Date",
+        "Description",
+        "Category",
+        "Amount",
+      ]);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE0E0E0" },
+      };
+
+      expenses.forEach((exp) => {
+        worksheet.addRow([
+          new Date(exp.createdAt).toLocaleDateString("en-IN"),
+          exp.description,
+          exp.category || "Uncategorized",
+          parseFloat(exp.amount).toFixed(2),
+        ]);
+      });
+
+      if (worksheet.columns) {
+        worksheet.columns.forEach((column) => {
+          if (column && column.eachCell) {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: false }, (cell) => {
+              const cellValue = cell.value ? cell.value.toString() : "";
+              maxLength = Math.max(maxLength, cellValue.length);
+            });
+            column.width = Math.min(Math.max(maxLength + 2, 12), 40);
+          }
+        });
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=expenses-report-${startDate}-to-${endDate}.xlsx`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

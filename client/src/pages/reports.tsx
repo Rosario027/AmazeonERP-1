@@ -13,6 +13,8 @@ export default function Reports() {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [expensesStartDate, setExpensesStartDate] = useState("");
+  const [expensesEndDate, setExpensesEndDate] = useState("");
 
   const downloadMutation = useMutation({
     mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
@@ -43,6 +45,35 @@ export default function Reports() {
     },
   });
 
+  const downloadExpensesMutation = useMutation({
+    mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
+      return await apiRequest("GET", `/api/reports/expenses?startDate=${startDate}&endDate=${endDate}`);
+    },
+    onSuccess: async (response, variables) => {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expenses-report-${variables.startDate}-to-${variables.endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Expenses report downloaded successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate expenses report",
+      });
+    },
+  });
+
   const handleDownload = async () => {
     if (!startDate || !endDate) {
       toast({
@@ -56,6 +87,19 @@ export default function Reports() {
     downloadMutation.mutate({ startDate, endDate });
   };
 
+  const handleExpensesDownload = async () => {
+    if (!expensesStartDate || !expensesEndDate) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please select both start and end dates",
+      });
+      return;
+    }
+
+    downloadExpensesMutation.mutate({ startDate: expensesStartDate, endDate: expensesEndDate });
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -66,6 +110,7 @@ export default function Reports() {
       <Tabs defaultValue="sales" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="sales" data-testid="tab-sales-report">Sales Report</TabsTrigger>
+          <TabsTrigger value="expenses" data-testid="tab-expenses-report">Expenses Report</TabsTrigger>
         </TabsList>
         <TabsContent value="sales">
 
@@ -126,6 +171,64 @@ export default function Reports() {
           </Button>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Generate Expenses Report</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="expensesStartDate" className="text-sm font-medium">
+                    Start Date <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="expensesStartDate"
+                    type="date"
+                    value={expensesStartDate}
+                    onChange={(e) => setExpensesStartDate(e.target.value)}
+                    className="h-12"
+                    data-testid="input-expenses-start-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expensesEndDate" className="text-sm font-medium">
+                    End Date <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="expensesEndDate"
+                    type="date"
+                    value={expensesEndDate}
+                    onChange={(e) => setExpensesEndDate(e.target.value)}
+                    className="h-12"
+                    data-testid="input-expenses-end-date"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-muted p-6 rounded-md space-y-2">
+                <h3 className="font-semibold text-sm mb-3">Report Includes:</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Total Expenses</li>
+                  <li>• Category-wise Breakdown</li>
+                  <li>• Detailed Expense Records</li>
+                  <li>• Date, Description, and Amount for Each Entry</li>
+                </ul>
+              </div>
+
+              <Button
+                className="w-full h-12"
+                onClick={handleExpensesDownload}
+                disabled={downloadExpensesMutation.isPending}
+                data-testid="button-download-expenses-report"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {downloadExpensesMutation.isPending ? "Generating Report..." : "Download Excel Report"}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
