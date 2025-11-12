@@ -96,8 +96,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id));
-    return true;
+    try {
+      await db.delete(products).where(eq(products.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw new Error("Cannot delete product that is referenced in invoices");
+    }
   }
 
   async getInvoices(filters?: { startDate?: string; endDate?: string }): Promise<Invoice[]> {
@@ -131,12 +136,14 @@ export class DatabaseStorage implements IStorage {
   async createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<Invoice> {
     const [newInvoice] = await db.insert(invoices).values(invoice).returning();
 
-    const itemsWithInvoiceId = items.map(item => ({
-      ...item,
-      invoiceId: newInvoice.id,
-    }));
+    if (items.length > 0) {
+      const itemsWithInvoiceId = items.map((item: InsertInvoiceItem) => ({
+        ...item,
+        invoiceId: newInvoice.id,
+      }) satisfies typeof invoiceItems.$inferInsert);
 
-    await db.insert(invoiceItems).values(itemsWithInvoiceId);
+      await db.insert(invoiceItems).values(itemsWithInvoiceId);
+    }
 
     return newInvoice;
   }
@@ -150,12 +157,12 @@ export class DatabaseStorage implements IStorage {
 
     if (!updated) return undefined;
 
-    if (items) {
+    if (items && items.length > 0) {
       await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
-      const itemsWithInvoiceId = items.map(item => ({
+      const itemsWithInvoiceId = items.map((item: InsertInvoiceItem) => ({
         ...item,
         invoiceId: id,
-      }));
+      }) satisfies typeof invoiceItems.$inferInsert);
       await db.insert(invoiceItems).values(itemsWithInvoiceId);
     }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InvoiceItemDialog } from "@/components/InvoiceItemDialog";
 import { InvoiceReceipt } from "@/components/InvoiceReceipt";
+import { useLocation } from "wouter";
 
 interface InvoiceItem {
   productId: number | null;
@@ -28,6 +29,7 @@ interface InvoiceItem {
 
 export default function B2BInvoice() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerGst, setCustomerGst] = useState("");
@@ -117,6 +119,7 @@ export default function B2BInvoice() {
       setCustomerPhone("");
       setCustomerGst("");
       setItems([]);
+      setLocation("/b2b-invoice");
     },
     onError: () => {
       toast({
@@ -126,6 +129,45 @@ export default function B2BInvoice() {
       });
     },
   });
+
+  useEffect(() => {
+    if (items.length > 0) {
+      const recalculatedItems = items.map(item => {
+        const rate = parseFloat(item.rate);
+        const quantity = item.quantity;
+        const totalGstPercentage = item.cgstPercentage + item.sgstPercentage;
+        
+        let taxableValue: number;
+        let cgstAmount: number;
+        let sgstAmount: number;
+        let total: number;
+        
+        if (paymentMode === "Cash") {
+          const baseAmount = rate * quantity;
+          const gstAmount = (baseAmount * totalGstPercentage) / (100 + totalGstPercentage);
+          taxableValue = baseAmount - gstAmount;
+          cgstAmount = gstAmount / 2;
+          sgstAmount = gstAmount / 2;
+          total = baseAmount;
+        } else {
+          taxableValue = rate * quantity;
+          cgstAmount = (taxableValue * (totalGstPercentage / 2)) / 100;
+          sgstAmount = (taxableValue * (totalGstPercentage / 2)) / 100;
+          total = taxableValue + cgstAmount + sgstAmount;
+        }
+        
+        return {
+          ...item,
+          taxableValue,
+          cgstAmount,
+          sgstAmount,
+          total,
+        };
+      });
+      
+      setItems(recalculatedItems);
+    }
+  }, [paymentMode]);
 
   const handleSave = async () => {
     if (!customerName || !customerPhone || !customerGst || items.length === 0) {
