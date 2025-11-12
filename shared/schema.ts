@@ -35,6 +35,7 @@ export const invoices = pgTable("invoices", {
   gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).notNull(),
   grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
   isEdited: boolean("is_edited").default(false).notNull(),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -93,6 +94,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
+  deletedAt: true,
   createdAt: true,
   updatedAt: true,
 });

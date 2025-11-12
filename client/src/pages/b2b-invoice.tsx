@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Printer, Save } from "lucide-react";
+import { Plus, Trash2, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -104,7 +104,7 @@ export default function B2BInvoice() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const calculateTotals = () => {
+  const { subtotal, totalCgst, totalSgst, totalGst, grandTotal } = useMemo(() => {
     let subtotal = 0;
     let totalCgst = 0;
     let totalSgst = 0;
@@ -119,9 +119,7 @@ export default function B2BInvoice() {
     const grandTotal = subtotal + totalGst;
 
     return { subtotal, totalCgst, totalSgst, totalGst, grandTotal };
-  };
-
-  const { subtotal, totalCgst, totalSgst, totalGst, grandTotal } = calculateTotals();
+  }, [items]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -250,10 +248,6 @@ export default function B2BInvoice() {
         total: item.total.toFixed(2),
       })),
     });
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   return (
@@ -445,7 +439,7 @@ export default function B2BInvoice() {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4">
+              <div className="pt-4">
                 <Button
                   className="w-full h-12"
                   onClick={handleSave}
@@ -454,10 +448,6 @@ export default function B2BInvoice() {
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saveMutation.isPending ? "Saving..." : "Save Bill"}
-                </Button>
-                <Button variant="outline" className="w-full h-12" onClick={handlePrint} data-testid="button-print-b2b-invoice">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print Bill
                 </Button>
               </div>
             </CardContent>

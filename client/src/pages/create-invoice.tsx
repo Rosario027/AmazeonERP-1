@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,7 +141,7 @@ export default function CreateInvoice() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const calculateTotals = () => {
+  const { subtotal, totalCgst, totalSgst, totalGst, grandTotal } = useMemo(() => {
     let subtotal = 0;
     let totalCgst = 0;
     let totalSgst = 0;
@@ -156,9 +156,7 @@ export default function CreateInvoice() {
     const grandTotal = subtotal + totalGst;
 
     return { subtotal, totalCgst, totalSgst, totalGst, grandTotal };
-  };
-
-  const { subtotal, totalCgst, totalSgst, totalGst, grandTotal } = calculateTotals();
+  }, [items]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
