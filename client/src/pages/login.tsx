@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import logoImage from "@assets/generated_images/Amazeon_ERP_professional_logo_af981c69.png";
+import logoImage from "@assets/1762677792449-0d76ba93-0eba-48fa-927f-62011c24e28f_1_1762958724838.jpg";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -109,11 +109,6 @@ export default function Login() {
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-muted rounded-md">
-            <p className="text-xs font-medium mb-2">Demo Credentials:</p>
-            <p className="text-xs text-muted-foreground">Admin: admin / admin@2025</p>
-            <p className="text-xs text-muted-foreground">User: user / user123</p>
-          </div>
         </CardContent>
       </Card>
     </div>

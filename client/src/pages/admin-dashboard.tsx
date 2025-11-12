@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
 
 interface DashboardStats {
   todaySales: number;
@@ -13,66 +13,44 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    todaySales: 0,
-    weekSales: 0,
-    monthSales: 0,
-    todayExpenses: 0,
-    weekExpenses: 0,
-    monthExpenses: 0,
+  const { data: stats, isLoading: loading } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/stats"],
   });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch("/api/admin/stats");
-      const data = await response.json();
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to fetch stats", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const statCards = [
     {
       title: "Today's Sales",
-      value: stats.todaySales,
+      value: stats?.todaySales ?? 0,
       icon: DollarSign,
       color: "text-chart-1",
     },
     {
       title: "Week Sales",
-      value: stats.weekSales,
+      value: stats?.weekSales ?? 0,
       icon: TrendingUp,
       color: "text-chart-3",
     },
     {
       title: "Month Sales",
-      value: stats.monthSales,
+      value: stats?.monthSales ?? 0,
       icon: Calendar,
       color: "text-chart-2",
     },
     {
       title: "Today's Expenses",
-      value: stats.todayExpenses,
+      value: stats?.todayExpenses ?? 0,
       icon: TrendingDown,
       color: "text-destructive",
     },
     {
       title: "Week Expenses",
-      value: stats.weekExpenses,
+      value: stats?.weekExpenses ?? 0,
       icon: TrendingDown,
       color: "text-destructive",
     },
     {
       title: "Month Expenses",
-      value: stats.monthExpenses,
+      value: stats?.monthExpenses ?? 0,
       icon: TrendingDown,
       color: "text-destructive",
     },
