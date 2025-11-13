@@ -35,14 +35,13 @@ export default function B2BInvoice() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [customerGst, setCustomerGst] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Online");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: invoiceNumberData } = useQuery<{ invoiceNumber: string }>({
-    queryKey: ["/api/invoices/next-number?type=B2B"],
+    queryKey: ["/api/invoices/next-number"],
   });
 
   const { data: products = [], isLoading: productsLoading } = useQuery<any[]>({
@@ -130,7 +129,7 @@ export default function B2BInvoice() {
       return await apiRequest("POST", "/api/invoices", data);
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2B"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       const invoiceId = data.id;
       toast({
@@ -148,7 +147,6 @@ export default function B2BInvoice() {
         ),
       });
       setCustomerName("");
-      setCustomerPhone("");
       setCustomerGst("");
       setItems([]);
     },
@@ -218,7 +216,7 @@ export default function B2BInvoice() {
   }, [paymentMode]);
 
   const handleSave = async () => {
-    if (!customerName || !customerPhone || !customerGst || items.length === 0) {
+    if (!customerName || !customerGst || items.length === 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -230,7 +228,6 @@ export default function B2BInvoice() {
     saveMutation.mutate({
       invoiceType: "B2B",
       customerName,
-      customerPhone,
       customerGst,
       paymentMode,
       items: items.map((item) => ({
@@ -296,32 +293,18 @@ export default function B2BInvoice() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="customerPhone" className="text-sm font-medium">
-                    Contact Phone <span className="text-destructive">*</span>
+                  <Label htmlFor="customerGst" className="text-sm font-medium">
+                    GST Number <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="customerPhone"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Enter phone number"
+                    id="customerGst"
+                    value={customerGst}
+                    onChange={(e) => setCustomerGst(e.target.value)}
+                    placeholder="Enter GST number (e.g., 29ABCDE1234F1Z5)"
                     className="h-12"
-                    data-testid="input-business-phone"
+                    data-testid="input-gst-number"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="customerGst" className="text-sm font-medium">
-                  GST Number <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="customerGst"
-                  value={customerGst}
-                  onChange={(e) => setCustomerGst(e.target.value)}
-                  placeholder="Enter GST number (e.g., 29ABCDE1234F1Z5)"
-                  className="h-12"
-                  data-testid="input-gst-number"
-                />
               </div>
 
               <div className="space-y-2">
@@ -467,7 +450,6 @@ export default function B2BInvoice() {
       <InvoiceReceipt
         invoiceNumber={invoiceNumber}
         customerName={customerName}
-        customerPhone={customerPhone}
         items={items}
         subtotal={subtotal}
         grandTotal={grandTotal}

@@ -6,6 +6,41 @@ Amazeon ERP is a comprehensive enterprise resource planning system designed for 
 
 The system handles both B2C (Business to Consumer) and B2B (Business to Business) invoice workflows, with automatic GST calculation, product management, and detailed reporting capabilities.
 
+## Recent Changes (November 2025)
+
+### Settings Page Implementation
+- Added admin-only Settings page at `/admin/settings`
+- User management: Add, edit, delete users with role assignment (admin/user)
+- Password reset functionality for existing users
+- Invoice series configuration: Set starting number for FY-based invoices
+- Preview next invoice number before creating invoices
+
+### Financial Year-Based Invoice Numbering
+- Implemented Indian Financial Year (FY) invoice numbering system
+- Format: `FY25-26/XXX` (e.g., FY25-26/001, FY25-26/002)
+- Financial Year cycle: April 1 - March 31
+- Automatic FY detection and annual reset on April 1st
+- Configurable starting number via Settings page
+- Backend API: `/api/invoices/next-number` returns formatted invoice number
+
+### Customer Phone Field Removal
+- Made `customerPhone` optional/nullable in database schema
+- Removed customer phone field from all invoice creation forms (B2C and B2B)
+- Updated storage layer to normalize undefined values to null
+- Backend routes handle optional customerPhone with null coalescing
+- Print invoice template no longer displays customer phone
+
+### Shop Information Updates
+- Updated business address: "Number 2, 3rd street, bharathy nagar Ganpathy coimbatore -641006"
+- Single phone number: 9791599979
+- Removed email field from shop info and print templates
+- Simplified shop info structure: name, address, phone, gstNumber
+
+### Database Schema Updates
+- Added `settings` table for key-value configuration storage
+- Modified `invoices.customerPhone` to nullable text column
+- All changes applied via Drizzle schema push
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

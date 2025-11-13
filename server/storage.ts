@@ -171,7 +171,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<Invoice> {
-    const [newInvoice] = await db.insert(invoices).values(invoice).returning();
+    // Normalize undefined customerPhone to null for database insert
+    const normalizedInvoice = {
+      ...invoice,
+      customerPhone: invoice.customerPhone ?? null,
+    };
+    
+    const [newInvoice] = await db.insert(invoices).values(normalizedInvoice).returning();
 
     if (items.length > 0) {
       const itemsWithInvoiceId = items.map((item: InsertInvoiceItem) => ({
@@ -186,9 +192,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateInvoice(id: number, invoice: Partial<InsertInvoice>, items?: InsertInvoiceItem[]): Promise<Invoice | undefined> {
+    // Normalize undefined customerPhone to null for database update
+    const normalizedInvoice = {
+      ...invoice,
+      customerPhone: invoice.customerPhone ?? null,
+    };
+    
     const [updated] = await db
       .update(invoices)
-      .set({ ...invoice, isEdited: true, updatedAt: new Date() })
+      .set({ ...normalizedInvoice, isEdited: true, updatedAt: new Date() })
       .where(eq(invoices.id, id))
       .returning();
 

@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { invoiceType, customerName, customerPhone, customerGst, paymentMode, items } = req.body;
 
-      if (!invoiceType || !customerName || !customerPhone || !paymentMode || !items || items.length === 0) {
+      if (!invoiceType || !customerName || !paymentMode || !items || items.length === 0) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           invoiceNumber,
           invoiceType,
           customerName,
-          customerPhone,
+          customerPhone: customerPhone || null,
           customerGst: customerGst || null,
           paymentMode,
           subtotal: subtotal.toString(),
@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         updateData = {
           customerName,
-          customerPhone,
+          customerPhone: customerPhone || null,
           customerGst: customerGst || null,
           paymentMode,
           subtotal: subtotal.toString(),
@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json(invoice);
       } else {
-        updateData = { customerName, customerPhone, customerGst, paymentMode };
+        updateData = { customerName, customerPhone: customerPhone || null, customerGst, paymentMode };
         const invoice = await storage.updateInvoice(id, updateData);
 
         if (!invoice) {

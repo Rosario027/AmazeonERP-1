@@ -125,11 +125,6 @@ export function InvoiceReceipt({
           <div style={{ marginBottom: "2px" }}>
             Customer: {customerName}
           </div>
-          {customerPhone && (
-            <div style={{ marginBottom: "2px" }}>
-              Phone: {customerPhone}
-            </div>
-          )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
             <span>Date: {formatDate(date)}</span>
             <span>Time: {formatTime(date)}</span>

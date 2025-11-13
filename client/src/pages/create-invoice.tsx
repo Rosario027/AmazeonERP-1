@@ -40,7 +40,6 @@ export default function CreateInvoice() {
   const isEditing = !!editInvoiceId;
 
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Cash");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,7 +53,6 @@ export default function CreateInvoice() {
   useEffect(() => {
     if (existingInvoice && isEditing) {
       setCustomerName(existingInvoice.customerName || "");
-      setCustomerPhone(existingInvoice.customerPhone || "");
       setPaymentMode(existingInvoice.paymentMode || "Cash");
       setInvoiceNumberForEdit(existingInvoice.invoiceNumber || "");
       
@@ -82,7 +80,7 @@ export default function CreateInvoice() {
   }, [existingInvoice, isEditing]);
 
   const { data: invoiceNumberData } = useQuery<{ invoiceNumber: string }>({
-    queryKey: ["/api/invoices/next-number?type=B2C"],
+    queryKey: ["/api/invoices/next-number"],
     enabled: !isEditing,
   });
 
@@ -175,7 +173,7 @@ export default function CreateInvoice() {
       }
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number?type=B2C"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/next-number"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       const invoiceId = data.id;
       toast({
@@ -194,7 +192,6 @@ export default function CreateInvoice() {
       });
       if (!isEditing) {
         setCustomerName("");
-        setCustomerPhone("");
         setItems([]);
       }
     },
@@ -264,7 +261,7 @@ export default function CreateInvoice() {
   }, [paymentMode]);
 
   const handleSave = async () => {
-    if (!customerName || !customerPhone || items.length === 0) {
+    if (!customerName || items.length === 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -276,7 +273,6 @@ export default function CreateInvoice() {
     saveMutation.mutate({
       invoiceType: "B2C",
       customerName,
-      customerPhone,
       paymentMode,
       items: items.map((item) => ({
         productId: item.productId,
@@ -330,33 +326,18 @@ export default function CreateInvoice() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="customerName" className="text-sm font-medium">
-                    Customer Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
-                    className="h-12"
-                    data-testid="input-customer-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerPhone" className="text-sm font-medium">
-                    Customer Phone <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="customerPhone"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Enter phone number"
-                    className="h-12"
-                    data-testid="input-customer-phone"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="customerName" className="text-sm font-medium">
+                  Customer Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                  className="h-12"
+                  data-testid="input-customer-name"
+                />
               </div>
 
               <div className="space-y-2">
@@ -514,7 +495,6 @@ export default function CreateInvoice() {
       <InvoiceReceipt
         invoiceNumber={invoiceNumber}
         customerName={customerName}
-        customerPhone={customerPhone}
         items={items}
         subtotal={subtotal}
         grandTotal={grandTotal}
