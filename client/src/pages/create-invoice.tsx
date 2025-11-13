@@ -27,6 +27,8 @@ interface InvoiceItem {
   sgstPercentage: number;
   sgstAmount: number;
   total: number;
+  originalRate: number;
+  originalMode: "Cash" | "Online";
 }
 
 export default function CreateInvoice() {
@@ -71,6 +73,8 @@ export default function CreateInvoice() {
           total: parseFloat(item.total),
           gstPercentage: parseFloat(item.cgstPercentage) + parseFloat(item.sgstPercentage),
           gstAmount: parseFloat(item.cgstAmount) + parseFloat(item.sgstAmount),
+          originalRate: parseFloat(item.rate),
+          originalMode: existingInvoice.paymentMode,
         }));
         setItems(formattedItems);
       }
@@ -135,6 +139,8 @@ export default function CreateInvoice() {
       sgstPercentage: sgstPercentage,
       sgstAmount: sgstAmount,
       total: total,
+      originalRate: rate,
+      originalMode: paymentMode,
     };
     setItems((prev) => [newItem, ...prev]);
   };
@@ -205,38 +211,50 @@ export default function CreateInvoice() {
     if (items.length > 0) {
       const recalculatedItems = items.map(item => {
         const quantity = item.quantity;
-        // Use existing taxableValue as canonical (exclusive base)
-        const canonicalTaxableValue = item.taxableValue;
-        const cgstPercentage = item.cgstPercentage;
-        const sgstPercentage = item.sgstPercentage;
-        const totalGstPercentage = cgstPercentage + sgstPercentage;
+        const gstPercentage = item.cgstPercentage + item.sgstPercentage;
+        const cgstPercentage = gstPercentage / 2;
+        const sgstPercentage = gstPercentage / 2;
         
-        // Calculate GST amounts from canonical taxableValue
-        const cgstAmount = (canonicalTaxableValue * cgstPercentage) / 100;
-        const sgstAmount = (canonicalTaxableValue * sgstPercentage) / 100;
-        const total = canonicalTaxableValue + cgstAmount + sgstAmount;
+        // Use originalRate if available, otherwise fallback to current rate
+        const originalRateValue = item.originalRate || parseFloat(item.rate);
         
-        // Display rate depends on payment mode
+        let taxableValue: number;
+        let cgstAmount: number;
+        let sgstAmount: number;
+        let total: number;
         let displayRate: string;
+        
         if (paymentMode === "Cash") {
-          // Cash mode: rate is inclusive (total per unit)
-          displayRate = (total / quantity).toFixed(2);
+          // Cash mode: treat originalRate as GST-INCLUSIVE
+          const inclusiveTotal = originalRateValue * quantity;
+          const gstAmount = (inclusiveTotal * gstPercentage) / (100 + gstPercentage);
+          taxableValue = inclusiveTotal - gstAmount;
+          cgstAmount = gstAmount / 2;
+          sgstAmount = gstAmount / 2;
+          total = inclusiveTotal;
+          displayRate = originalRateValue.toFixed(2);
         } else {
-          // Online mode: rate is exclusive (taxable per unit)
-          displayRate = (canonicalTaxableValue / quantity).toFixed(2);
+          // Online mode: treat originalRate as GST-EXCLUSIVE
+          taxableValue = originalRateValue * quantity;
+          cgstAmount = (taxableValue * cgstPercentage) / 100;
+          sgstAmount = (taxableValue * sgstPercentage) / 100;
+          total = taxableValue + cgstAmount + sgstAmount;
+          displayRate = originalRateValue.toFixed(2);
         }
         
         return {
           ...item,
           rate: displayRate,
-          taxableValue: canonicalTaxableValue,
+          taxableValue,
           cgstPercentage,
           cgstAmount,
           sgstPercentage,
           sgstAmount,
-          gstPercentage: totalGstPercentage,
+          gstPercentage,
           gstAmount: cgstAmount + sgstAmount,
           total,
+          originalRate: originalRateValue,
+          originalMode: item.originalMode || paymentMode,
         };
       });
       
