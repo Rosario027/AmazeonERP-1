@@ -31,6 +31,10 @@ export default function Settings() {
   
   // Invoice Series Configuration State
   const [startingInvoiceNumber, setStartingInvoiceNumber] = useState("");
+  
+  // GST Calculation Mode State
+  const [cashGstMode, setCashGstMode] = useState<"inclusive" | "exclusive">("inclusive");
+  const [onlineGstMode, setOnlineGstMode] = useState<"inclusive" | "exclusive">("exclusive");
 
   // Fetch users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -42,12 +46,22 @@ export default function Settings() {
     queryKey: ["/api/settings"],
   });
 
-  // Extract invoice_series_start from settings
+  // Extract settings from configuration
   useEffect(() => {
     if (settings && settings.length > 0) {
       const invoiceSeriesSetting = settings.find(s => s.key === "invoice_series_start");
       if (invoiceSeriesSetting) {
         setStartingInvoiceNumber(invoiceSeriesSetting.value ?? "");
+      }
+      
+      const cashGstModeSetting = settings.find(s => s.key === "cash_gst_mode");
+      if (cashGstModeSetting) {
+        setCashGstMode(cashGstModeSetting.value as "inclusive" | "exclusive");
+      }
+      
+      const onlineGstModeSetting = settings.find(s => s.key === "online_gst_mode");
+      if (onlineGstModeSetting) {
+        setOnlineGstMode(onlineGstModeSetting.value as "inclusive" | "exclusive");
       }
     }
   }, [settings]);
@@ -170,6 +184,30 @@ export default function Settings() {
     },
   });
 
+  // Save GST Mode Configuration Mutation
+  const saveGstModesMutation = useMutation({
+    mutationFn: async (data: Array<{ key: string; value: string }>) => {
+      const promises = data.map(setting => 
+        apiRequest("POST", "/api/settings", setting)
+      );
+      return await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({
+        title: "Success",
+        description: "GST calculation modes saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save GST modes",
+      });
+    },
+  });
+
   const handleAddUser = () => {
     if (!userFormData.username || !userFormData.password) {
       toast({
@@ -213,6 +251,13 @@ export default function Settings() {
       key: "invoice_series_start",
       value: startingInvoiceNumber,
     });
+  };
+
+  const handleSaveGstModes = () => {
+    saveGstModesMutation.mutate([
+      { key: "cash_gst_mode", value: cashGstMode },
+      { key: "online_gst_mode", value: onlineGstMode },
+    ]);
   };
 
   return (
@@ -354,7 +399,7 @@ export default function Settings() {
       </Card>
 
       {/* Invoice Series Configuration Section */}
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-lg font-medium">Invoice Series Configuration</CardTitle>
         </CardHeader>
@@ -393,6 +438,74 @@ export default function Settings() {
             data-testid="button-save-configuration"
           >
             {saveInvoiceSeriesMutation.isPending ? "Saving..." : "Save Configuration"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* GST Calculation Settings Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">GST Calculation Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="cashGstMode">Cash Payment GST Mode</Label>
+            <Select
+              value={cashGstMode}
+              onValueChange={(value: "inclusive" | "exclusive") => setCashGstMode(value)}
+            >
+              <SelectTrigger id="cashGstMode" data-testid="select-cash-gst-mode">
+                <SelectValue placeholder="Select mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inclusive" data-testid="option-cash-inclusive">
+                  Inclusive
+                </SelectItem>
+                <SelectItem value="exclusive" data-testid="option-cash-exclusive">
+                  Exclusive
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Inclusive:</span> GST is already included in the rate (taxable value = rate ÷ (1 + GST%))
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Exclusive:</span> GST is added on top of the rate (taxable value = rate, GST added separately)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="onlineGstMode">Online Payment GST Mode</Label>
+            <Select
+              value={onlineGstMode}
+              onValueChange={(value: "inclusive" | "exclusive") => setOnlineGstMode(value)}
+            >
+              <SelectTrigger id="onlineGstMode" data-testid="select-online-gst-mode">
+                <SelectValue placeholder="Select mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inclusive" data-testid="option-online-inclusive">
+                  Inclusive
+                </SelectItem>
+                <SelectItem value="exclusive" data-testid="option-online-exclusive">
+                  Exclusive
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Inclusive:</span> GST is already included in the rate (taxable value = rate ÷ (1 + GST%))
+            </p>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Exclusive:</span> GST is added on top of the rate (taxable value = rate, GST added separately)
+            </p>
+          </div>
+
+          <Button 
+            onClick={handleSaveGstModes} 
+            disabled={saveGstModesMutation.isPending}
+            data-testid="button-save-gst-modes"
+          >
+            {saveGstModesMutation.isPending ? "Saving..." : "Save GST Modes"}
           </Button>
         </CardContent>
       </Card>

@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InvoiceItemDialog } from "@/components/InvoiceItemDialog";
 import { InvoiceReceipt } from "@/components/InvoiceReceipt";
 import { useLocation } from "wouter";
+import { calculateInvoiceItem, type GstMode } from "@shared/gstCalculations";
 
 interface InvoiceItem {
   productId: number | null;
@@ -48,6 +49,13 @@ export default function B2BInvoice() {
     queryKey: ["/api/products"],
   });
 
+  const { data: settings = [] } = useQuery<Array<{ key: string; value: string }>>({
+    queryKey: ["/api/settings"],
+  });
+
+  const cashGstMode: GstMode = (settings.find(s => s.key === "cash_gst_mode")?.value as GstMode) || "inclusive";
+  const onlineGstMode: GstMode = (settings.find(s => s.key === "online_gst_mode")?.value as GstMode) || "exclusive";
+
   const invoiceNumber = invoiceNumberData?.invoiceNumber || "";
 
   const handleAddItem = (item: {
@@ -61,27 +69,11 @@ export default function B2BInvoice() {
     const quantity = item.quantity;
     const gstPercentage = parseFloat(item.gstPercentage);
     
+    const gstMode = paymentMode === "Cash" ? cashGstMode : onlineGstMode;
+    const calculated = calculateInvoiceItem(rate, quantity, gstPercentage, gstMode);
+    
     const cgstPercentage = gstPercentage / 2;
     const sgstPercentage = gstPercentage / 2;
-    
-    let taxableValue: number;
-    let cgstAmount: number;
-    let sgstAmount: number;
-    let total: number;
-    
-    if (paymentMode === "Cash") {
-      const baseAmount = rate * quantity;
-      const gstAmount = (baseAmount * gstPercentage) / (100 + gstPercentage);
-      taxableValue = baseAmount - gstAmount;
-      cgstAmount = gstAmount / 2;
-      sgstAmount = gstAmount / 2;
-      total = baseAmount;
-    } else {
-      taxableValue = rate * quantity;
-      cgstAmount = (taxableValue * cgstPercentage) / 100;
-      sgstAmount = (taxableValue * sgstPercentage) / 100;
-      total = taxableValue + cgstAmount + sgstAmount;
-    }
     
     const newItem: InvoiceItem = {
       productId: product?.id || null,
@@ -90,13 +82,13 @@ export default function B2BInvoice() {
       rate: item.rate,
       quantity: quantity,
       gstPercentage: gstPercentage,
-      gstAmount: cgstAmount + sgstAmount,
-      taxableValue: taxableValue,
+      gstAmount: calculated.gstAmount,
+      taxableValue: calculated.taxableValue,
       cgstPercentage: cgstPercentage,
-      cgstAmount: cgstAmount,
+      cgstAmount: calculated.cgstAmount,
       sgstPercentage: sgstPercentage,
-      sgstAmount: sgstAmount,
-      total: total,
+      sgstAmount: calculated.sgstAmount,
+      total: calculated.total,
       originalRate: rate,
       originalMode: paymentMode,
     };
@@ -164,47 +156,25 @@ export default function B2BInvoice() {
       const recalculatedItems = items.map(item => {
         const quantity = item.quantity;
         const gstPercentage = item.cgstPercentage + item.sgstPercentage;
-        const cgstPercentage = gstPercentage / 2;
-        const sgstPercentage = gstPercentage / 2;
         
         // Use originalRate if available, otherwise fallback to current rate
         const originalRateValue = item.originalRate || parseFloat(item.rate);
         
-        let taxableValue: number;
-        let cgstAmount: number;
-        let sgstAmount: number;
-        let total: number;
-        let displayRate: string;
-        
-        if (paymentMode === "Cash") {
-          // Cash mode: treat originalRate as GST-INCLUSIVE
-          const inclusiveTotal = originalRateValue * quantity;
-          const gstAmount = (inclusiveTotal * gstPercentage) / (100 + gstPercentage);
-          taxableValue = inclusiveTotal - gstAmount;
-          cgstAmount = gstAmount / 2;
-          sgstAmount = gstAmount / 2;
-          total = inclusiveTotal;
-          displayRate = originalRateValue.toFixed(2);
-        } else {
-          // Online mode: treat originalRate as GST-EXCLUSIVE
-          taxableValue = originalRateValue * quantity;
-          cgstAmount = (taxableValue * cgstPercentage) / 100;
-          sgstAmount = (taxableValue * sgstPercentage) / 100;
-          total = taxableValue + cgstAmount + sgstAmount;
-          displayRate = originalRateValue.toFixed(2);
-        }
+        // Determine GST mode based on payment mode
+        const gstMode = paymentMode === "Cash" ? cashGstMode : onlineGstMode;
+        const calculated = calculateInvoiceItem(originalRateValue, quantity, gstPercentage, gstMode);
         
         return {
           ...item,
-          rate: displayRate,
-          taxableValue,
-          cgstPercentage,
-          cgstAmount,
-          sgstPercentage,
-          sgstAmount,
+          rate: originalRateValue.toFixed(2),
+          taxableValue: calculated.taxableValue,
+          cgstPercentage: gstPercentage / 2,
+          cgstAmount: calculated.cgstAmount,
+          sgstPercentage: gstPercentage / 2,
+          sgstAmount: calculated.sgstAmount,
           gstPercentage,
-          gstAmount: cgstAmount + sgstAmount,
-          total,
+          gstAmount: calculated.gstAmount,
+          total: calculated.total,
           originalRate: originalRateValue,
           originalMode: item.originalMode || paymentMode,
         };
@@ -213,7 +183,7 @@ export default function B2BInvoice() {
       setItems(recalculatedItems);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMode]);
+  }, [paymentMode, cashGstMode, onlineGstMode]);
 
   const handleSave = async () => {
     if (!customerName || !customerGst || items.length === 0) {
