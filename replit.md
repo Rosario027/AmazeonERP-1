@@ -8,6 +8,25 @@ The system handles both B2C (Business to Consumer) and B2B (Business to Business
 
 ## Recent Changes (November 2025)
 
+### User Management & Navigation Improvements (Latest)
+- **Enhanced User Management in Settings Page**:
+  - Full edit functionality: Modify username and role for existing users
+  - Partial update support: Can update username or role independently
+  - Validation: Username trimmed, empty/whitespace usernames rejected
+  - Backend: PATCH `/api/users/:id` with Zod validation and partial updates
+- **Post-Print Navigation Fix**:
+  - After printing invoice, automatically navigate to blank new invoice screen
+  - Timestamp-based reset logic prevents multiple print issues
+  - Works for both B2C and B2B invoice types
+  - No state loss or race conditions
+- **Auto-Logout Bug Fixed**:
+  - Print route moved inside authenticated section in App.tsx
+  - User role no longer logged out when accessing print page
+  - Auth context maintained throughout print workflow
+- **Shop Name Updated**:
+  - Changed from "AMAZEON" to "AMAZEON SHOPPING" in print templates
+  - Updated in shared/shopInfo.ts
+
 ### Settings Page Implementation
 - Added admin-only Settings page at `/admin/settings`
 - User management: Add, edit, delete users with role assignment (admin/user)
