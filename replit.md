@@ -28,6 +28,8 @@ The system handles both B2C (Business to Consumer) and B2B (Business to Business
   - Shop name changed from "AMAZEON" to "AMAZEON SHOPPING"
   - Last line changed to "Thank you for shopping" (previously "Thank you for your business!")
   - Updated in shared/shopInfo.ts, print-invoice.tsx, and InvoiceReceipt.tsx
+  - Print page moved outside main app layout - removes sidebar toggle, theme toggle, and header from print view
+  - Print now shows only invoice content from logo to "Thank you for shopping"
 - **Dashboard Real-Time Updates**:
   - Dashboard stats now update immediately when invoices are deleted
   - Delete mutation invalidates both invoice list and admin stats queries
