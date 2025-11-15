@@ -110,7 +110,16 @@ export default function PrintInvoice() {
   const grandTotal = parseFloat(invoice.grandTotal);
 
   return (
-    <>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'white',
+      zIndex: 9999,
+      overflow: 'auto'
+    }}>
       <style>
         {`
           @media print {
@@ -229,6 +238,6 @@ export default function PrintInvoice() {
           <div style={{ marginTop: "4px" }}>Visit again</div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
