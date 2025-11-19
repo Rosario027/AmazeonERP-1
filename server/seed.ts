@@ -6,7 +6,7 @@ async function seed() {
   console.log("Seeding database...");
 
   // Create admin user
-  const adminPassword = await bcrypt.hash("admin@2025", 10);
+  const adminPassword = await bcrypt.hash("admin123", 10);
   await db.insert(users).values({
     username: "admin",
     password: adminPassword,
@@ -40,7 +40,7 @@ async function seed() {
   }
 
   console.log("Database seeded successfully!");
-  console.log("Admin user: admin / admin@2025");
+  console.log("Admin user: admin / admin123");
   console.log("Regular user: user / user123");
 
   process.exit(0);
