@@ -323,23 +323,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Expenses (accessible to any authenticated user)
+  // Expenses
+  // GET: authenticated users see only their own expenses; admins see all
   app.get("/api/expenses", authMiddleware, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
+      const user = (req as any).user;
       const expenses = await storage.getExpenses({
         startDate: startDate as string,
         endDate: endDate as string,
-      });
+      }, user?.userId, user?.role === "admin");
       res.json(expenses);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
   });
 
+  // POST: any authenticated user can add an expense; createdBy will be set to the creator
   app.post("/api/expenses", authMiddleware, async (req, res) => {
     try {
       const { description, amount, category } = req.body;
+      const user = (req as any).user;
 
       if (!description || !amount) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -349,7 +353,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         amount: amount.toString(),
         category: category || null,
-      });
+        createdBy: user?.userId || null,
+      } as any);
 
       res.status(201).json(expense);
     } catch (error) {
@@ -357,7 +362,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/expenses/:id", authMiddleware, async (req, res) => {
+  // PATCH: only admin can update expenses
+  app.patch("/api/expenses/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { description, amount, category } = req.body;
@@ -374,11 +380,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(expense);
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Failed to update expense" });
     }
   });
 
-  app.delete("/api/expenses/:id", authMiddleware, async (req, res) => {
+  // DELETE: only admin can delete
+  app.delete("/api/expenses/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteExpense(id);

@@ -65,6 +65,7 @@ export const expenses = pgTable("expenses", {
   description: text("description").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   category: text("category"),
+  createdBy: varchar("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

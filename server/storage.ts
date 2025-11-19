@@ -310,7 +310,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getExpenses(filters?: { startDate?: string; endDate?: string }): Promise<Expense[]> {
+  async getExpenses(filters?: { startDate?: string; endDate?: string }, userId?: string, adminView?: boolean): Promise<Expense[]> {
     let query = db.select().from(expenses);
 
     const conditions = [];
@@ -321,6 +321,11 @@ export class DatabaseStorage implements IStorage {
       const endDate = new Date(filters.endDate);
       endDate.setHours(23, 59, 59, 999);
       conditions.push(lte(expenses.createdAt, endDate));
+    }
+
+    // If the caller is not admin, only return expenses created by that user
+    if (userId && !adminView) {
+      conditions.push(eq(expenses.createdBy, userId));
     }
 
     if (conditions.length > 0) {
