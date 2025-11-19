@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-context";
 
 interface Invoice {
   id: number;
@@ -24,6 +25,7 @@ interface Invoice {
 }
 
 export default function SalesOverview() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [startDate, setStartDate] = useState("");
@@ -220,24 +222,28 @@ export default function SalesOverview() {
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => setLocation(`/create-invoice?edit=${invoice.id}`)}
-                            data-testid={`button-edit-${invoice.id}`}
-                            disabled={!!invoice.deletedAt}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDelete(invoice.id)}
-                            disabled={!!invoice.deletedAt || deleteMutation.isPending}
-                            data-testid={`button-delete-${invoice.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {user?.role === "admin" && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => setLocation(`/create-invoice?edit=${invoice.id}`)}
+                                data-testid={`button-edit-${invoice.id}`}
+                                disabled={!!invoice.deletedAt}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDelete(invoice.id)}
+                                disabled={!!invoice.deletedAt || deleteMutation.isPending}
+                                data-testid={`button-delete-${invoice.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

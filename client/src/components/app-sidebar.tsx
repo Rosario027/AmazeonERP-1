@@ -29,6 +29,11 @@ export function AppSidebar() {
       url: "/sales-overview",
       icon: BarChart3,
     },
+    {
+      title: "Expenses",
+      url: "/expenses",
+      icon: DollarSign,
+    },
   ];
 
   const adminMenuItems = [
