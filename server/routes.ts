@@ -323,8 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Expenses (admin only)
-  app.get("/api/expenses", authMiddleware, adminMiddleware, async (req, res) => {
+  // Expenses (accessible to any authenticated user)
+  app.get("/api/expenses", authMiddleware, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const expenses = await storage.getExpenses({
@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/expenses", authMiddleware, adminMiddleware, async (req, res) => {
+  app.post("/api/expenses", authMiddleware, async (req, res) => {
     try {
       const { description, amount, category } = req.body;
 
@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/expenses/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  app.patch("/api/expenses/:id", authMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { description, amount, category } = req.body;
@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/expenses/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  app.delete("/api/expenses/:id", authMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteExpense(id);
