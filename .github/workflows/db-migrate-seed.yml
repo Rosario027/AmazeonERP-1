@@ -14,6 +14,16 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm ci
+      - name: Check DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "ERROR: DATABASE_URL is not set. Add it to GitHub Secrets as 'DATABASE_URL' and retry.";
+            exit 1;
+          else
+            echo "DATABASE_URL is set (hidden). Proceeding...";
+          fi
       - name: Run migrations (drizzle)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
