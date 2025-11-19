@@ -50,6 +50,7 @@ export default function CreateInvoice() {
   const [storedGstMode, setStoredGstMode] = useState<GstMode | null>(null);
   const lastResetTimestamp = useRef<string | null>(null);
   const printAfterSaveRef = useRef(false);
+  const printWindowRef = useRef<Window | null>(null);
 
   // Reset form to blank state when navigating back from print with ?new= parameter
   useEffect(() => {
@@ -205,10 +206,23 @@ export default function CreateInvoice() {
           </Button>
         ),
       });
-      // If requested, automatically open print preview
+      // If requested, automatically open print preview in the previously opened tab/window
       if ((printAfterSaveRef.current ?? false) === true) {
         printAfterSaveRef.current = false;
-        setLocation(`/print-invoice/${invoiceId}`);
+        const win = printWindowRef.current;
+        // If we have a user-opened window, navigate it to the print page so it triggers print dialog
+        if (win && !win.closed) {
+          try {
+            win.location.href = `${window.location.origin}/print-invoice/${invoiceId}`;
+          } catch (e) {
+            // fallback to same-tab navigation if cross-origin or other issue
+            setLocation(`/print-invoice/${invoiceId}`);
+          }
+        } else {
+          // Fallback: navigate current tab to print view
+          setLocation(`/print-invoice/${invoiceId}`);
+        }
+        printWindowRef.current = null;
       }
       if (!isEditing) {
         setCustomerName("");
@@ -280,7 +294,20 @@ export default function CreateInvoice() {
   };
 
   const handlePrint = () => {
-    // Trigger save first, then print via the save onSuccess navigation to /print-invoice/:id
+    // Open a blank window immediately (user-initiated) so later navigation can trigger print dialog
+    try {
+      const w = window.open("about:blank", "_blank");
+      if (w) {
+        // show a small loading page so user sees something while save completes
+        w.document.write('<html><head><title>Printing...</title></head><body><p>Preparing print preview...</p></body></html>');
+        printWindowRef.current = w;
+      }
+    } catch (e) {
+      // ignore popup blocker; we'll fallback to same-tab navigation after save
+      printWindowRef.current = null;
+    }
+
+    // mark that we want printing after save and start save
     printAfterSaveRef.current = true;
     handleSave();
   };
