@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { InvoiceItemDialog } from "@/components/InvoiceItemDialog";
 import { InvoiceReceipt } from "@/components/InvoiceReceipt";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { calculateInvoiceItem, type GstMode } from "@shared/gstCalculations";
 
@@ -180,6 +181,26 @@ export default function CreateInvoice() {
     return { subtotal, totalCgst, totalSgst, totalGst, grandTotal };
   }, [items]);
 
+  const recalcItemsForPaymentMode = (newPaymentMode: "Cash" | "Online") => {
+    const gstMode = newPaymentMode === "Cash" ? cashGstMode : onlineGstMode;
+    const recalculated = items.map((item) => {
+      const calculated = calculateInvoiceItem(item.originalRate, item.quantity, item.gstPercentage, gstMode);
+      const cgstPercentage = item.gstPercentage / 2;
+      const sgstPercentage = item.gstPercentage / 2;
+      return {
+        ...item,
+        gstAmount: calculated.gstAmount,
+        taxableValue: calculated.taxableValue,
+        cgstAmount: calculated.cgstAmount,
+        sgstAmount: calculated.sgstAmount,
+        total: calculated.total,
+        originalMode: newPaymentMode,
+      } as InvoiceItem;
+    });
+    setItems(recalculated);
+    setPaymentMode(newPaymentMode);
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       if (isEditing && editInvoiceId) {
@@ -294,21 +315,28 @@ export default function CreateInvoice() {
   };
 
   const handlePrint = () => {
-    // Open a blank window immediately (user-initiated) so later navigation can trigger print dialog
+    // Open the preview modal instead of navigating away
+    setIsPreviewOpen(true);
+  };
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const onPreviewPrint = () => {
+    // User clicked Print inside preview modal: open a popup (user gesture), then save. On save success
+    // the popup will be redirected to the print page by saveMutation.onSuccess
     try {
-      const w = window.open("about:blank", "_blank");
+      const w = window.open("about:blank", "_blank", "noopener,noreferrer,width=800,height=600");
       if (w) {
-        // show a small loading page so user sees something while save completes
         w.document.write('<html><head><title>Printing...</title></head><body><p>Preparing print preview...</p></body></html>');
         printWindowRef.current = w;
       }
     } catch (e) {
-      // ignore popup blocker; we'll fallback to same-tab navigation after save
       printWindowRef.current = null;
     }
 
-    // mark that we want printing after save and start save
     printAfterSaveRef.current = true;
+    // close preview modal (we open popup for UX)
+    setIsPreviewOpen(false);
     handleSave();
   };
 
@@ -371,7 +399,7 @@ export default function CreateInvoice() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 hidden">
                 <Label htmlFor="paymentMode" className="text-sm font-medium">
                   Payment Mode <span className="text-destructive">*</span>
                 </Label>
@@ -393,6 +421,8 @@ export default function CreateInvoice() {
                   }
                 </p>
               </div>
+              {/* Hide original payment selection visually; we will also provide a payment selector in Summary so user can choose at the end */}
+              
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -501,6 +531,20 @@ export default function CreateInvoice() {
               </div>
 
               <div className="space-y-3 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="paymentModeSummary" className="text-sm font-medium">
+                    Payment Mode <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={paymentMode} onValueChange={(value: "Cash" | "Online") => recalcItemsForPaymentMode(value)} disabled={isEditing}>
+                    <SelectTrigger className="h-12" data-testid="select-payment-mode-summary">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Online">Online</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   className="w-full h-12"
                   onClick={handleSave}
@@ -531,6 +575,27 @@ export default function CreateInvoice() {
           products={products}
           onAddItem={handleAddItem}
         />
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invoice Preview</DialogTitle>
+            </DialogHeader>
+            <div className="p-4">
+              <InvoiceReceipt
+                invoiceNumber={invoiceNumber}
+                customerName={customerName}
+                customerPhone={customerPhone}
+                items={items}
+                subtotal={subtotal}
+                grandTotal={grandTotal}
+              />
+            </div>
+            <div className="p-4 flex gap-2">
+              <Button onClick={onPreviewPrint} data-testid="button-preview-print">Save & Print</Button>
+              <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <InvoiceReceipt
