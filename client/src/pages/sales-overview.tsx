@@ -217,7 +217,7 @@ export default function SalesOverview() {
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            onClick={() => window.open(`/print-invoice/${invoice.id}`, '_blank')}
+                            onClick={() => window.open(`/print-invoice/${invoice.id}`, 'invoice_print', 'width=800,height=600,menubar=0,toolbar=0,location=0')}
                             data-testid={`button-print-${invoice.id}`}
                           >
                             <Printer className="h-4 w-4" />

@@ -325,9 +325,17 @@ export default function CreateInvoice() {
     // User clicked Print inside preview modal: open a popup (user gesture), then save. On save success
     // the popup will be redirected to the print page by saveMutation.onSuccess
     try {
-      const w = window.open("about:blank", "_blank", "noopener,noreferrer,width=800,height=600");
+      // Open a named popup (no noopener) so we keep a reference and can redirect it after save.
+      // Using a named window also reuses the same popup if the user triggers print multiple times.
+      const w = window.open("", "invoice_print", "width=800,height=600,menubar=0,toolbar=0,location=0");
       if (w) {
-        w.document.write('<html><head><title>Printing...</title></head><body><p>Preparing print preview...</p></body></html>');
+        try {
+          w.document.write('<html><head><title>Printing...</title></head><body><p>Preparing print preview...</p></body></html>');
+          w.document.close();
+          w.focus();
+        } catch (writeErr) {
+          // Some browsers may restrict document.write; ignore and keep the window reference.
+        }
         printWindowRef.current = w;
       }
     } catch (e) {
