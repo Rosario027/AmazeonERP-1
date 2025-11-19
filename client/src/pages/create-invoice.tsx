@@ -49,6 +49,7 @@ export default function CreateInvoice() {
   const [invoiceNumberForEdit, setInvoiceNumberForEdit] = useState("");
   const [storedGstMode, setStoredGstMode] = useState<GstMode | null>(null);
   const lastResetTimestamp = useRef<string | null>(null);
+  const printAfterSaveRef = useRef(false);
 
   // Reset form to blank state when navigating back from print with ?new= parameter
   useEffect(() => {
@@ -204,6 +205,11 @@ export default function CreateInvoice() {
           </Button>
         ),
       });
+      // If requested, automatically open print preview
+      if ((printAfterSaveRef.current ?? false) === true) {
+        printAfterSaveRef.current = false;
+        setLocation(`/print-invoice/${invoiceId}`);
+      }
       if (!isEditing) {
         setCustomerName("");
         setItems([]);
@@ -274,7 +280,9 @@ export default function CreateInvoice() {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Trigger save first, then print via the save onSuccess navigation to /print-invoice/:id
+    printAfterSaveRef.current = true;
+    handleSave();
   };
 
   return (

@@ -65,9 +65,11 @@ function renderMainApp(user: any) {
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full">
-        <AppSidebar />
+        <div className="no-print">
+          <AppSidebar />
+        </div>
         <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b h-16">
+          <header className="no-print flex items-center justify-between p-4 border-b h-16">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <ThemeToggle />
           </header>

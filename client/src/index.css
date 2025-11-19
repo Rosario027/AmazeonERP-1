@@ -67,6 +67,36 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* Print-specific adjustments to remove UI chrome and start receipt at the logo */
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide interactive UI chrome */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Defensive selectors for the sidebar and triggers */
+  [data-slot="sidebar-wrapper"],
+  [data-slot="sidebar"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-trigger"],
+  header {
+    display: none !important;
+  }
+
+  /* Ensure receipt prints flush to top */
+  .receipt-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
