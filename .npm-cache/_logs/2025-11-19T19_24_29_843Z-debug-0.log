@@ -1,0 +1,215 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.16.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npmrc
+5 silly config load:file:C:\Users\YY839XK\.npmrc
+6 silly config load:file:C:\Users\YY839XK\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm exec @railway/cli login --apiKey ***
+8 verbose argv "exec" "--" "@railway/cli" "login" "--apiKey" "***"
+9 verbose logfile logs-max:10 dir:C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_24_29_843Z-
+10 verbose logfile C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_24_29_843Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 http fetch GET 200 https://registry.npmjs.org/npm 895ms
+14 http fetch GET 200 https://registry.npmjs.org/@railway%2fcli 465ms (cache miss)
+15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+16 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+17 silly idealTree buildDeps
+18 silly fetch manifest @railway/cli@4.11.1
+19 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/@railway%2fcli 76ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli set size:undefined disposed:false
+22 silly placeDep ROOT @railway/cli@4.11.1 OK for:  want: 4.11.1
+23 silly fetch manifest @napi-rs/triples@^1.1.0
+24 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples cache-miss
+25 silly fetch manifest node-fetch@^3.1.0
+26 silly packumentCache full:https://registry.npmjs.org/node-fetch cache-miss
+27 silly fetch manifest tar@^6.1.11
+28 silly packumentCache full:https://registry.npmjs.org/tar cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/node-fetch 62ms (cache miss)
+30 silly packumentCache full:https://registry.npmjs.org/node-fetch set size:undefined disposed:false
+31 http fetch GET 200 https://registry.npmjs.org/tar 154ms (cache miss)
+32 silly packumentCache full:https://registry.npmjs.org/tar set size:undefined disposed:false
+33 http fetch GET 200 https://registry.npmjs.org/@napi-rs%2ftriples 327ms (cache miss)
+34 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples set size:undefined disposed:false
+35 silly placeDep ROOT @napi-rs/triples@1.2.0 OK for: @railway/cli@4.11.1 want: ^1.1.0
+36 silly placeDep ROOT node-fetch@3.3.2 OK for: @railway/cli@4.11.1 want: ^3.1.0
+37 silly placeDep ROOT tar@6.2.1 OK for: @railway/cli@4.11.1 want: ^6.1.11
+38 silly fetch manifest data-uri-to-buffer@^4.0.0
+39 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer cache-miss
+40 silly fetch manifest fetch-blob@^3.1.4
+41 silly packumentCache full:https://registry.npmjs.org/fetch-blob cache-miss
+42 silly fetch manifest formdata-polyfill@^4.0.10
+43 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill cache-miss
+44 silly fetch manifest chownr@^2.0.0
+45 silly packumentCache full:https://registry.npmjs.org/chownr cache-miss
+46 silly fetch manifest mkdirp@^1.0.3
+47 silly packumentCache full:https://registry.npmjs.org/mkdirp cache-miss
+48 silly fetch manifest yallist@^4.0.0
+49 silly packumentCache full:https://registry.npmjs.org/yallist cache-miss
+50 silly fetch manifest minipass@^5.0.0
+51 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+52 http fetch GET 200 https://registry.npmjs.org/data-uri-to-buffer 154ms (cache miss)
+53 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer set size:undefined disposed:false
+54 silly fetch manifest minizlib@^2.1.1
+55 silly packumentCache full:https://registry.npmjs.org/minizlib cache-miss
+56 http fetch GET 200 https://registry.npmjs.org/fetch-blob 172ms (cache miss)
+57 silly packumentCache full:https://registry.npmjs.org/fetch-blob set size:undefined disposed:false
+58 silly fetch manifest fs-minipass@^2.0.0
+59 silly packumentCache full:https://registry.npmjs.org/fs-minipass cache-miss
+60 http fetch GET 200 https://registry.npmjs.org/formdata-polyfill 176ms (cache miss)
+61 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill set size:undefined disposed:false
+62 http fetch GET 200 https://registry.npmjs.org/chownr 228ms (cache miss)
+63 silly packumentCache full:https://registry.npmjs.org/chownr set size:undefined disposed:false
+64 http fetch GET 200 https://registry.npmjs.org/yallist 237ms (cache miss)
+65 silly packumentCache full:https://registry.npmjs.org/yallist set size:undefined disposed:false
+66 http fetch GET 200 https://registry.npmjs.org/minizlib 99ms (cache miss)
+67 silly packumentCache full:https://registry.npmjs.org/minizlib set size:undefined disposed:false
+68 http fetch GET 200 https://registry.npmjs.org/mkdirp 267ms (cache miss)
+69 silly packumentCache full:https://registry.npmjs.org/mkdirp set size:undefined disposed:false
+70 http fetch GET 200 https://registry.npmjs.org/fs-minipass 109ms (cache miss)
+71 silly packumentCache full:https://registry.npmjs.org/fs-minipass set size:undefined disposed:false
+72 http fetch GET 200 https://registry.npmjs.org/minipass 301ms (cache miss)
+73 silly packumentCache full:https://registry.npmjs.org/minipass set size:undefined disposed:false
+74 silly placeDep ROOT data-uri-to-buffer@4.0.1 OK for: node-fetch@3.3.2 want: ^4.0.0
+75 silly placeDep ROOT fetch-blob@3.2.0 OK for: node-fetch@3.3.2 want: ^3.1.4
+76 silly placeDep ROOT formdata-polyfill@4.0.10 OK for: node-fetch@3.3.2 want: ^4.0.10
+77 silly fetch manifest node-domexception@^1.0.0
+78 silly packumentCache full:https://registry.npmjs.org/node-domexception cache-miss
+79 silly fetch manifest web-streams-polyfill@^3.0.3
+80 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill cache-miss
+81 http fetch GET 200 https://registry.npmjs.org/node-domexception 57ms (cache miss)
+82 silly packumentCache full:https://registry.npmjs.org/node-domexception set size:undefined disposed:false
+83 http fetch GET 200 https://registry.npmjs.org/web-streams-polyfill 66ms (cache miss)
+84 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill set size:undefined disposed:false
+85 silly placeDep ROOT node-domexception@1.0.0 OK for: fetch-blob@3.2.0 want: ^1.0.0
+86 silly placeDep ROOT web-streams-polyfill@3.3.3 OK for: fetch-blob@3.2.0 want: ^3.0.3
+87 silly placeDep ROOT chownr@2.0.0 OK for: tar@6.2.1 want: ^2.0.0
+88 silly placeDep ROOT fs-minipass@2.1.0 OK for: tar@6.2.1 want: ^2.0.0
+89 silly placeDep ROOT minipass@5.0.0 OK for: tar@6.2.1 want: ^5.0.0
+90 silly placeDep ROOT minizlib@2.1.2 OK for: tar@6.2.1 want: ^2.1.1
+91 silly placeDep ROOT mkdirp@1.0.4 OK for: tar@6.2.1 want: ^1.0.3
+92 silly placeDep ROOT yallist@4.0.0 OK for: tar@6.2.1 want: ^4.0.0
+93 silly fetch manifest minipass@^3.0.0
+94 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+95 silly fetch manifest minipass@^3.0.0
+96 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+97 http cache https://registry.npmjs.org/minipass 25ms (cache hit)
+98 silly packumentCache full:https://registry.npmjs.org/minipass set size:490195 disposed:false
+99 http cache https://registry.npmjs.org/minipass 31ms (cache hit)
+100 silly packumentCache full:https://registry.npmjs.org/minipass set size:490195 disposed:false
+101 silly packumentCache full:https://registry.npmjs.org/minipass dispose
+102 silly placeDep node_modules/fs-minipass minipass@3.3.6 OK for: fs-minipass@2.1.0 want: ^3.0.0
+103 silly placeDep node_modules/minizlib minipass@3.3.6 OK for: minizlib@2.1.2 want: ^3.0.0
+104 silly reify moves {}
+105 silly audit bulk request {
+105 silly audit   '@railway/cli': [ '4.11.1' ],
+105 silly audit   '@napi-rs/triples': [ '1.2.0' ],
+105 silly audit   'node-fetch': [ '3.3.2' ],
+105 silly audit   tar: [ '6.2.1' ],
+105 silly audit   'data-uri-to-buffer': [ '4.0.1' ],
+105 silly audit   'fetch-blob': [ '3.2.0' ],
+105 silly audit   'formdata-polyfill': [ '4.0.10' ],
+105 silly audit   'node-domexception': [ '1.0.0' ],
+105 silly audit   'web-streams-polyfill': [ '3.3.3' ],
+105 silly audit   chownr: [ '2.0.0' ],
+105 silly audit   'fs-minipass': [ '2.1.0' ],
+105 silly audit   minipass: [ '5.0.0', '3.3.6' ],
+105 silly audit   minizlib: [ '2.1.2' ],
+105 silly audit   mkdirp: [ '1.0.4' ],
+105 silly audit   yallist: [ '4.0.0' ]
+105 silly audit }
+106 http cache yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 0ms (cache hit)
+107 http cache mkdirp@https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz 0ms (cache hit)
+108 http cache minizlib@https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz 0ms (cache hit)
+109 http cache chownr@https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz 0ms (cache hit)
+110 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-5.0.0.tgz 0ms (cache hit)
+111 http cache web-streams-polyfill@https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz 0ms (cache hit)
+112 http cache fs-minipass@https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz 0ms (cache hit)
+113 http cache node-domexception@https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz 0ms (cache hit)
+114 http cache @napi-rs/triples@https://registry.npmjs.org/@napi-rs/triples/-/triples-1.2.0.tgz 0ms (cache hit)
+115 http cache tar@https://registry.npmjs.org/tar/-/tar-6.2.1.tgz 0ms (cache hit)
+116 http cache fetch-blob@https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz 0ms (cache hit)
+117 http cache formdata-polyfill@https://registry.npmjs.org/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz 0ms (cache hit)
+118 http cache node-fetch@https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz 0ms (cache hit)
+119 http cache data-uri-to-buffer@https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz 0ms (cache hit)
+120 silly tarball no local data for yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz. Extracting by manifest.
+121 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+122 http cache @railway/cli@https://registry.npmjs.org/@railway/cli/-/cli-4.11.1.tgz 0ms (cache hit)
+123 silly tarball no local data for mkdirp@https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz. Extracting by manifest.
+124 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+125 silly tarball no local data for minizlib@https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz. Extracting by manifest.
+126 silly tarball no local data for chownr@https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz. Extracting by manifest.
+127 silly tarball no local data for minipass@https://registry.npmjs.org/minipass/-/minipass-5.0.0.tgz. Extracting by manifest.
+128 silly tarball no local data for web-streams-polyfill@https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz. Extracting by manifest.
+129 silly tarball no local data for fs-minipass@https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz. Extracting by manifest.
+130 silly tarball no local data for node-domexception@https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz. Extracting by manifest.
+131 silly tarball no local data for @napi-rs/triples@https://registry.npmjs.org/@napi-rs/triples/-/triples-1.2.0.tgz. Extracting by manifest.
+132 silly tarball no local data for tar@https://registry.npmjs.org/tar/-/tar-6.2.1.tgz. Extracting by manifest.
+133 silly tarball no local data for fetch-blob@https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz. Extracting by manifest.
+134 silly tarball no local data for formdata-polyfill@https://registry.npmjs.org/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz. Extracting by manifest.
+135 silly tarball no local data for node-fetch@https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz. Extracting by manifest.
+136 silly tarball no local data for data-uri-to-buffer@https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz. Extracting by manifest.
+137 silly tarball no local data for minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz. Extracting by manifest.
+138 silly tarball no local data for @railway/cli@https://registry.npmjs.org/@railway/cli/-/cli-4.11.1.tgz. Extracting by manifest.
+139 silly tarball no local data for minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz. Extracting by manifest.
+140 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 409ms
+141 silly audit report {}
+142 http fetch GET 200 https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz 484ms (cache miss)
+143 http fetch GET 200 https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz 495ms (cache miss)
+144 http fetch GET 200 https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz 497ms (cache miss)
+145 http fetch GET 200 https://registry.npmjs.org/@railway/cli/-/cli-4.11.1.tgz 485ms (cache miss)
+146 http fetch GET 200 https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 486ms (cache miss)
+147 http fetch GET 200 https://registry.npmjs.org/minipass/-/minipass-5.0.0.tgz 550ms (cache miss)
+148 http fetch GET 200 https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz 577ms (cache miss)
+149 http fetch GET 200 https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 584ms (cache miss)
+150 http fetch GET 200 https://registry.npmjs.org/@napi-rs/triples/-/triples-1.2.0.tgz 583ms (cache miss)
+151 http fetch GET 200 https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 640ms (cache miss)
+152 http fetch GET 200 https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz 849ms (cache miss)
+153 http fetch GET 200 https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz 876ms (cache miss)
+154 http fetch GET 200 https://registry.npmjs.org/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz 883ms (cache miss)
+155 http fetch GET 200 https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz 1019ms (cache miss)
+156 http fetch GET 200 https://registry.npmjs.org/tar/-/tar-6.2.1.tgz 1073ms (cache miss)
+157 http fetch GET 200 https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz 1099ms (cache miss)
+158 warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+159 http fetch GET 200 https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz 2073ms (cache miss)
+160 info run @railway/cli@4.11.1 postinstall node_modules/@railway/cli node ./npm-install/postinstall.js
+161 info run @railway/cli@4.11.1 postinstall { code: 1, signal: null }
+162 warn cleanup Failed to remove some directories [
+162 warn cleanup   [
+162 warn cleanup     '\\\\?\\C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\.npm-cache\\_npx\\79fa66f96c8fdacf\\node_modules\\minizlib',
+162 warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_npx\79fa66f96c8fdacf\node_modules\minizlib\node_modules\minipass'] {
+162 warn cleanup       errno: -4048,
+162 warn cleanup       code: 'EPERM',
+162 warn cleanup       syscall: 'rmdir',
+162 warn cleanup       path: 'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\.npm-cache\\_npx\\79fa66f96c8fdacf\\node_modules\\minizlib\\node_modules\\minipass'
+162 warn cleanup     }
+162 warn cleanup   ],
+162 warn cleanup   [
+162 warn cleanup     '\\\\?\\C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\.npm-cache\\_npx\\79fa66f96c8fdacf\\node_modules',
+162 warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_npx\79fa66f96c8fdacf\node_modules\web-streams-polyfill\dist\types'] {
+162 warn cleanup       errno: -4048,
+162 warn cleanup       code: 'EPERM',
+162 warn cleanup       syscall: 'rmdir',
+162 warn cleanup       path: 'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\.npm-cache\\_npx\\79fa66f96c8fdacf\\node_modules\\web-streams-polyfill\\dist\\types'
+162 warn cleanup     }
+162 warn cleanup   ]
+162 warn cleanup ]
+163 silly unfinished npm timer reify 1763580288497
+164 silly unfinished npm timer reify:build 1763580291504
+165 silly unfinished npm timer build 1763580291504
+166 silly unfinished npm timer build:deps 1763580291505
+167 silly unfinished npm timer build:run:postinstall 1763580291529
+168 silly unfinished npm timer build:run:postinstall:node_modules/@railway/cli 1763580291530
+169 verbose cwd C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0
+170 verbose os Windows_NT 10.0.22631
+171 verbose node v22.16.0
+172 verbose npm  v10.9.2
+173 notice
+173 notice New [31mmajor[39m version of npm available! [31m10.9.2[39m -> [34m11.6.2[39m
+173 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.6.2[39m
+173 notice To update run: [4mnpm install -g npm@11.6.2[24m
+173 notice  { force: true, [Symbol(proc-log.meta)]: true }
+174 verbose exit 1
+175 verbose code 1

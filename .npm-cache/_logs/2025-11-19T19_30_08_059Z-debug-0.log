@@ -1,0 +1,190 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.16.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\YY839XK\.npmrc
+5 silly config load:file:C:\Users\YY839XK\AppData\Roaming\npm\etc\npmrc
+6 verbose title npm install @railway/cli
+7 verbose argv "install" "--global" "@railway/cli"
+8 verbose logfile logs-max:10 dir:C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_30_08_059Z-
+9 verbose logfile C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_30_08_059Z-debug-0.log
+10 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+11 silly logfile done cleaning log files
+12 silly idealTree buildDeps
+13 silly fetch manifest @railway/cli@*
+14 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli cache-miss
+15 http fetch GET 200 https://registry.npmjs.org/@railway%2fcli 265ms (cache revalidated)
+16 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli set size:456357 disposed:false
+17 silly placeDep ROOT @railway/cli@4.11.1 OK for:  want: *
+18 silly fetch manifest @napi-rs/triples@^1.1.0
+19 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples cache-miss
+20 silly fetch manifest node-fetch@^3.1.0
+21 silly packumentCache full:https://registry.npmjs.org/node-fetch cache-miss
+22 silly fetch manifest tar@^6.1.11
+23 silly packumentCache full:https://registry.npmjs.org/tar cache-miss
+24 http fetch GET 200 https://registry.npmjs.org/node-fetch 61ms (cache revalidated)
+25 silly packumentCache full:https://registry.npmjs.org/node-fetch set size:896010 disposed:false
+26 http fetch GET 200 https://registry.npmjs.org/tar 142ms (cache revalidated)
+27 silly packumentCache full:https://registry.npmjs.org/tar set size:429369 disposed:false
+28 http fetch GET 200 https://registry.npmjs.org/@napi-rs%2ftriples 156ms (cache revalidated)
+29 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples set size:192270 disposed:false
+30 silly placeDep node_modules/@railway/cli @napi-rs/triples@1.2.0 OK for: @railway/cli@4.11.1 want: ^1.1.0
+31 silly placeDep node_modules/@railway/cli node-fetch@3.3.2 OK for: @railway/cli@4.11.1 want: ^3.1.0
+32 silly placeDep node_modules/@railway/cli tar@6.2.1 OK for: @railway/cli@4.11.1 want: ^6.1.11
+33 silly fetch manifest data-uri-to-buffer@^4.0.0
+34 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer cache-miss
+35 silly fetch manifest fetch-blob@^3.1.4
+36 silly packumentCache full:https://registry.npmjs.org/fetch-blob cache-miss
+37 silly fetch manifest formdata-polyfill@^4.0.10
+38 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill cache-miss
+39 silly fetch manifest chownr@^2.0.0
+40 silly packumentCache full:https://registry.npmjs.org/chownr cache-miss
+41 silly fetch manifest mkdirp@^1.0.3
+42 silly packumentCache full:https://registry.npmjs.org/mkdirp cache-miss
+43 silly fetch manifest yallist@^4.0.0
+44 silly packumentCache full:https://registry.npmjs.org/yallist cache-miss
+45 silly fetch manifest minipass@^5.0.0
+46 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+47 http fetch GET 200 https://registry.npmjs.org/fetch-blob 71ms (cache revalidated)
+48 silly packumentCache full:https://registry.npmjs.org/fetch-blob set size:73704 disposed:false
+49 silly fetch manifest minizlib@^2.1.1
+50 silly packumentCache full:https://registry.npmjs.org/minizlib cache-miss
+51 http fetch GET 200 https://registry.npmjs.org/data-uri-to-buffer 79ms (cache revalidated)
+52 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer set size:43253 disposed:false
+53 silly fetch manifest fs-minipass@^2.0.0
+54 silly packumentCache full:https://registry.npmjs.org/fs-minipass cache-miss
+55 http fetch GET 200 https://registry.npmjs.org/chownr 80ms (cache revalidated)
+56 silly packumentCache full:https://registry.npmjs.org/chownr set size:22157 disposed:false
+57 http fetch GET 200 https://registry.npmjs.org/minizlib 60ms (cache revalidated)
+58 silly packumentCache full:https://registry.npmjs.org/minizlib set size:62862 disposed:false
+59 http fetch GET 200 https://registry.npmjs.org/fs-minipass 79ms (cache revalidated)
+60 silly packumentCache full:https://registry.npmjs.org/fs-minipass set size:44606 disposed:false
+61 http fetch GET 200 https://registry.npmjs.org/mkdirp 177ms (cache revalidated)
+62 silly packumentCache full:https://registry.npmjs.org/mkdirp set size:116455 disposed:false
+63 http fetch GET 200 https://registry.npmjs.org/yallist 179ms (cache revalidated)
+64 silly packumentCache full:https://registry.npmjs.org/yallist set size:34610 disposed:false
+65 http fetch GET 200 https://registry.npmjs.org/formdata-polyfill 183ms (cache revalidated)
+66 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill set size:94446 disposed:false
+67 http fetch GET 200 https://registry.npmjs.org/minipass 186ms (cache revalidated)
+68 silly packumentCache full:https://registry.npmjs.org/minipass set size:490195 disposed:false
+69 silly placeDep node_modules/@railway/cli data-uri-to-buffer@4.0.1 OK for: node-fetch@3.3.2 want: ^4.0.0
+70 silly placeDep node_modules/@railway/cli fetch-blob@3.2.0 OK for: node-fetch@3.3.2 want: ^3.1.4
+71 silly placeDep node_modules/@railway/cli formdata-polyfill@4.0.10 OK for: node-fetch@3.3.2 want: ^4.0.10
+72 silly fetch manifest node-domexception@^1.0.0
+73 silly packumentCache full:https://registry.npmjs.org/node-domexception cache-miss
+74 silly fetch manifest web-streams-polyfill@^3.0.3
+75 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill cache-miss
+76 http fetch GET 200 https://registry.npmjs.org/node-domexception 51ms (cache revalidated)
+77 silly packumentCache full:https://registry.npmjs.org/node-domexception set size:11516 disposed:false
+78 http fetch GET 200 https://registry.npmjs.org/web-streams-polyfill 52ms (cache revalidated)
+79 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill set size:136634 disposed:false
+80 silly placeDep node_modules/@railway/cli node-domexception@1.0.0 OK for: fetch-blob@3.2.0 want: ^1.0.0
+81 silly placeDep node_modules/@railway/cli web-streams-polyfill@3.3.3 OK for: fetch-blob@3.2.0 want: ^3.0.3
+82 silly placeDep node_modules/@railway/cli chownr@2.0.0 OK for: tar@6.2.1 want: ^2.0.0
+83 silly placeDep node_modules/@railway/cli fs-minipass@2.1.0 OK for: tar@6.2.1 want: ^2.0.0
+84 silly placeDep node_modules/@railway/cli minipass@5.0.0 OK for: tar@6.2.1 want: ^5.0.0
+85 silly placeDep node_modules/@railway/cli minizlib@2.1.2 OK for: tar@6.2.1 want: ^2.1.1
+86 silly placeDep node_modules/@railway/cli mkdirp@1.0.4 OK for: tar@6.2.1 want: ^1.0.3
+87 silly placeDep node_modules/@railway/cli yallist@4.0.0 OK for: tar@6.2.1 want: ^4.0.0
+88 silly fetch manifest minipass@^3.0.0
+89 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+90 silly fetch manifest minipass@^3.0.0
+91 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+92 silly placeDep node_modules/@railway/cli/node_modules/fs-minipass minipass@3.3.6 OK for: fs-minipass@2.1.0 want: ^3.0.0
+93 silly placeDep node_modules/@railway/cli/node_modules/minizlib minipass@3.3.6 OK for: minizlib@2.1.2 want: ^3.0.0
+94 silly reify mark retired [
+94 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli',
+94 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway',
+94 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway.cmd',
+94 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway.ps1'
+94 silly reify ]
+95 silly reify moves {
+95 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli': 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\.cli-54OjaYql',
+95 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway': 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\.railway-kFZCxbQf',
+95 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway.cmd': 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\.railway.cmd-n32S7u3F',
+95 silly reify   'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\railway.ps1': 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\.railway.ps1-gxx2T10o'
+95 silly reify }
+96 http cache @railway/cli@https://registry.npmjs.org/@railway/cli/-/cli-4.11.1.tgz 0ms (cache hit)
+97 http cache node-fetch@https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz 0ms (cache hit)
+98 http cache @napi-rs/triples@https://registry.npmjs.org/@napi-rs/triples/-/triples-1.2.0.tgz 0ms (cache hit)
+99 http cache tar@https://registry.npmjs.org/tar/-/tar-6.2.1.tgz 0ms (cache hit)
+100 http cache yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 0ms (cache hit)
+101 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+102 http cache web-streams-polyfill@https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz 0ms (cache hit)
+103 http cache mkdirp@https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz 0ms (cache hit)
+104 http cache minizlib@https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz 0ms (cache hit)
+105 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-5.0.0.tgz 0ms (cache hit)
+106 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+107 http cache node-domexception@https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz 0ms (cache hit)
+108 http cache formdata-polyfill@https://registry.npmjs.org/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz 0ms (cache hit)
+109 http cache fs-minipass@https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz 0ms (cache hit)
+110 http cache fetch-blob@https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz 0ms (cache hit)
+111 http cache data-uri-to-buffer@https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz 0ms (cache hit)
+112 http cache chownr@https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz 0ms (cache hit)
+113 warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+114 info run @railway/cli@4.11.1 postinstall node_modules/@railway/cli node ./npm-install/postinstall.js
+115 info run @railway/cli@4.11.1 postinstall { code: 1, signal: null }
+116 warn cleanup Failed to remove some directories [
+116 warn cleanup   [
+116 warn cleanup     'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli',
+116 warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\YY839XK\AppData\Roaming\npm\node_modules\@railway\cli\node_modules\web-streams-polyfill\dist\types'] {
+116 warn cleanup       errno: -4048,
+116 warn cleanup       code: 'EPERM',
+116 warn cleanup       syscall: 'rmdir',
+116 warn cleanup       path: 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli\\node_modules\\web-streams-polyfill\\dist\\types'
+116 warn cleanup     }
+116 warn cleanup   ],
+116 warn cleanup   [
+116 warn cleanup     '\\\\?\\C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli',
+116 warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\YY839XK\AppData\Roaming\npm\node_modules\@railway\cli\node_modules\web-streams-polyfill\dist'] {
+116 warn cleanup       errno: -4048,
+116 warn cleanup       code: 'EPERM',
+116 warn cleanup       syscall: 'rmdir',
+116 warn cleanup       path: 'C:\\Users\\YY839XK\\AppData\\Roaming\\npm\\node_modules\\@railway\\cli\\node_modules\\web-streams-polyfill\\dist'
+116 warn cleanup     }
+116 warn cleanup   ]
+116 warn cleanup ]
+117 verbose stack Error: command failed
+117 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:22:22)
+117 verbose stack     at spawnWithShell (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:124:10)
+117 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:12:12)
+117 verbose stack     at runScriptPkg (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script-pkg.js:77:13)
+117 verbose stack     at runScript (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script.js:9:12)
+117 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\rebuild.js:329:17
+117 verbose stack     at run (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:67:22)
+117 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:84:9
+117 verbose stack     at new Promise (<anonymous>)
+117 verbose stack     at callLimit (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:35:69)
+118 verbose pkgid @railway/cli@4.11.1
+119 error code 1
+120 error path C:\Users\YY839XK\AppData\Roaming\npm\node_modules\@railway\cli
+121 error command failed
+122 error command C:\WINDOWS\system32\cmd.exe /d /s /c node ./npm-install/postinstall.js
+123 error https://github.com/railwayapp/cli/releases/download/v4.11.1/railway-v4.11.1-x86_64-pc-windows-gnu.tar.gz
+124 error FetchError: request to https://github.com/railwayapp/cli/releases/download/v4.11.1/railway-v4.11.1-x86_64-pc-windows-gnu.tar.gz failed, reason: unable to get local issuer certificate
+124 error     at ClientRequest.<anonymous> (file:///C:/Users/YY839XK/AppData/Roaming/npm/node_modules/@railway/cli/node_modules/node-fetch/src/index.js:108:11)
+124 error     at ClientRequest.emit (node:events:518:28)
+124 error     at emitErrorEvent (node:_http_client:104:11)
+124 error     at TLSSocket.socketErrorListener (node:_http_client:518:5)
+124 error     at TLSSocket.emit (node:events:518:28)
+124 error     at emitErrorNT (node:internal/streams/destroy:170:8)
+124 error     at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+124 error     at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+124 error   type: 'system',
+124 error   errno: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+124 error   code: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+124 error   erroredSysCall: undefined
+124 error }
+125 silly unfinished npm timer reify 1763580611554
+126 silly unfinished npm timer reify:build 1763580612960
+127 silly unfinished npm timer build 1763580612960
+128 silly unfinished npm timer build:deps 1763580612961
+129 silly unfinished npm timer build:run:postinstall 1763580612978
+130 silly unfinished npm timer build:run:postinstall:node_modules/@railway/cli 1763580612979
+131 verbose cwd C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0
+132 verbose os Windows_NT 10.0.22631
+133 verbose node v22.16.0
+134 verbose npm  v10.9.2
+135 verbose exit 1
+136 verbose code 1
+137 error A complete log of this run can be found in: C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_30_08_059Z-debug-0.log

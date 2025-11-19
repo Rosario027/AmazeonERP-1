@@ -1,0 +1,584 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.16.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npmrc
+5 silly config load:file:C:\Users\YY839XK\.npmrc
+6 silly config load:file:C:\Users\YY839XK\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install @railway/cli
+8 verbose argv "install" "@railway/cli" "--no-audit" "--no-fund"
+9 verbose logfile logs-max:10 dir:C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_32_22_706Z-
+10 verbose logfile C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_32_22_706Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest @railway/cli@*
+15 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli cache-miss
+16 http cache https://registry.npmjs.org/@railway%2fcli 833ms (cache hit)
+17 silly packumentCache full:https://registry.npmjs.org/@railway%2fcli set size:456357 disposed:false
+18 silly placeDep ROOT @railway/cli@4.11.1 OK for: rest-express@1.0.0 want: *
+19 silly fetch manifest @napi-rs/triples@^1.1.0
+20 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples cache-miss
+21 silly fetch manifest node-fetch@^3.1.0
+22 silly packumentCache full:https://registry.npmjs.org/node-fetch cache-miss
+23 silly fetch manifest tar@^6.1.11
+24 silly packumentCache full:https://registry.npmjs.org/tar cache-miss
+25 http cache https://registry.npmjs.org/tar 320ms (cache hit)
+26 silly packumentCache full:https://registry.npmjs.org/tar set size:429369 disposed:false
+27 http cache https://registry.npmjs.org/node-fetch 383ms (cache hit)
+28 silly packumentCache full:https://registry.npmjs.org/node-fetch set size:896010 disposed:false
+29 http cache https://registry.npmjs.org/@napi-rs%2ftriples 425ms (cache hit)
+30 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2ftriples set size:192270 disposed:false
+31 silly placeDep ROOT @napi-rs/triples@1.2.0 OK for: @railway/cli@4.11.1 want: ^1.1.0
+32 silly placeDep ROOT node-fetch@3.3.2 OK for: @railway/cli@4.11.1 want: ^3.1.0
+33 silly placeDep ROOT tar@6.2.1 OK for: @railway/cli@4.11.1 want: ^6.1.11
+34 silly fetch manifest data-uri-to-buffer@^4.0.0
+35 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer cache-miss
+36 silly fetch manifest fetch-blob@^3.1.4
+37 silly packumentCache full:https://registry.npmjs.org/fetch-blob cache-miss
+38 silly fetch manifest formdata-polyfill@^4.0.10
+39 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill cache-miss
+40 silly fetch manifest chownr@^2.0.0
+41 silly packumentCache full:https://registry.npmjs.org/chownr cache-miss
+42 silly fetch manifest mkdirp@^1.0.3
+43 silly packumentCache full:https://registry.npmjs.org/mkdirp cache-miss
+44 silly fetch manifest yallist@^4.0.0
+45 silly packumentCache full:https://registry.npmjs.org/yallist cache-miss
+46 silly fetch manifest minipass@^5.0.0
+47 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+48 http cache https://registry.npmjs.org/formdata-polyfill 94ms (cache hit)
+49 silly packumentCache full:https://registry.npmjs.org/formdata-polyfill set size:94446 disposed:false
+50 silly fetch manifest minizlib@^2.1.1
+51 silly packumentCache full:https://registry.npmjs.org/minizlib cache-miss
+52 http cache https://registry.npmjs.org/fetch-blob 100ms (cache hit)
+53 silly packumentCache full:https://registry.npmjs.org/fetch-blob set size:73704 disposed:false
+54 silly fetch manifest fs-minipass@^2.0.0
+55 silly packumentCache full:https://registry.npmjs.org/fs-minipass cache-miss
+56 http cache https://registry.npmjs.org/data-uri-to-buffer 106ms (cache hit)
+57 silly packumentCache full:https://registry.npmjs.org/data-uri-to-buffer set size:43253 disposed:false
+58 http cache https://registry.npmjs.org/chownr 110ms (cache hit)
+59 silly packumentCache full:https://registry.npmjs.org/chownr set size:22157 disposed:false
+60 http cache https://registry.npmjs.org/minipass 110ms (cache hit)
+61 silly packumentCache full:https://registry.npmjs.org/minipass set size:490195 disposed:false
+62 http cache https://registry.npmjs.org/mkdirp 136ms (cache hit)
+63 silly packumentCache full:https://registry.npmjs.org/mkdirp set size:116455 disposed:false
+64 http cache https://registry.npmjs.org/yallist 139ms (cache hit)
+65 silly packumentCache full:https://registry.npmjs.org/yallist set size:34610 disposed:false
+66 http cache https://registry.npmjs.org/minizlib 80ms (cache hit)
+67 silly packumentCache full:https://registry.npmjs.org/minizlib set size:62862 disposed:false
+68 http cache https://registry.npmjs.org/fs-minipass 84ms (cache hit)
+69 silly packumentCache full:https://registry.npmjs.org/fs-minipass set size:44606 disposed:false
+70 silly placeDep ROOT data-uri-to-buffer@4.0.1 OK for: node-fetch@3.3.2 want: ^4.0.0
+71 silly placeDep ROOT fetch-blob@3.2.0 OK for: node-fetch@3.3.2 want: ^3.1.4
+72 silly placeDep ROOT formdata-polyfill@4.0.10 OK for: node-fetch@3.3.2 want: ^4.0.10
+73 silly fetch manifest node-domexception@^1.0.0
+74 silly packumentCache full:https://registry.npmjs.org/node-domexception cache-miss
+75 silly fetch manifest web-streams-polyfill@^3.0.3
+76 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill cache-miss
+77 http cache https://registry.npmjs.org/node-domexception 28ms (cache hit)
+78 silly packumentCache full:https://registry.npmjs.org/node-domexception set size:11516 disposed:false
+79 http cache https://registry.npmjs.org/web-streams-polyfill 48ms (cache hit)
+80 silly packumentCache full:https://registry.npmjs.org/web-streams-polyfill set size:136634 disposed:false
+81 silly placeDep ROOT node-domexception@1.0.0 OK for: fetch-blob@3.2.0 want: ^1.0.0
+82 silly placeDep ROOT web-streams-polyfill@3.3.3 OK for: fetch-blob@3.2.0 want: ^3.0.3
+83 silly placeDep ROOT chownr@2.0.0 OK for: tar@6.2.1 want: ^2.0.0
+84 silly placeDep ROOT fs-minipass@2.1.0 OK for: tar@6.2.1 want: ^2.0.0
+85 silly placeDep node_modules/tar minipass@5.0.0 OK for: tar@6.2.1 want: ^5.0.0
+86 silly placeDep ROOT minizlib@2.1.2 OK for: tar@6.2.1 want: ^2.1.1
+87 silly placeDep node_modules/tar mkdirp@1.0.4 OK for: tar@6.2.1 want: ^1.0.3
+88 silly placeDep node_modules/tar yallist@4.0.0 OK for: tar@6.2.1 want: ^4.0.0
+89 silly fetch manifest minipass@^3.0.0
+90 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+91 silly fetch manifest minipass@^3.0.0
+92 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+93 silly placeDep node_modules/fs-minipass minipass@3.3.6 OK for: fs-minipass@2.1.0 want: ^3.0.0
+94 silly placeDep node_modules/minizlib minipass@3.3.6 OK for: minizlib@2.1.2 want: ^3.0.0
+95 silly placeDep node_modules/minizlib yallist@4.0.0 OK for: minizlib@2.1.2 want: ^4.0.0
+96 silly placeDep node_modules/fs-minipass yallist@4.0.0 OK for: minipass@3.3.6 want: ^4.0.0
+97 silly reify moves {}
+98 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-win32-arm64-msvc
+99 silly reify mark deleted [
+99 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-win32-arm64-msvc'
+99 silly reify ]
+100 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-linux-x64-musl
+101 silly reify mark deleted [
+101 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-linux-x64-musl'
+101 silly reify ]
+102 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-linux-x64-gnu
+103 silly reify mark deleted [
+103 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-linux-x64-gnu'
+103 silly reify ]
+104 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-linux-arm64-musl
+105 silly reify mark deleted [
+105 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-linux-arm64-musl'
+105 silly reify ]
+106 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-linux-arm64-gnu
+107 silly reify mark deleted [
+107 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-linux-arm64-gnu'
+107 silly reify ]
+108 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-linux-arm-gnueabihf
+109 silly reify mark deleted [
+109 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-linux-arm-gnueabihf'
+109 silly reify ]
+110 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-freebsd-x64
+111 silly reify mark deleted [
+111 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-freebsd-x64'
+111 silly reify ]
+112 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-darwin-x64
+113 silly reify mark deleted [
+113 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-darwin-x64'
+113 silly reify ]
+114 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\lightningcss-darwin-arm64
+115 silly reify mark deleted [
+115 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\lightningcss-darwin-arm64'
+115 silly reify ]
+116 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\fsevents
+117 silly reify mark deleted [
+117 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\fsevents'
+117 silly reify ]
+118 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-win32-arm64-msvc
+119 silly reify mark deleted [
+119 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-win32-arm64-msvc'
+119 silly reify ]
+120 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-linux-x64-musl
+121 silly reify mark deleted [
+121 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-linux-x64-musl'
+121 silly reify ]
+122 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-linux-x64-gnu
+123 silly reify mark deleted [
+123 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-linux-x64-gnu'
+123 silly reify ]
+124 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-linux-arm64-musl
+125 silly reify mark deleted [
+125 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-linux-arm64-musl'
+125 silly reify ]
+126 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-linux-arm64-gnu
+127 silly reify mark deleted [
+127 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-linux-arm64-gnu'
+127 silly reify ]
+128 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-linux-arm-gnueabihf
+129 silly reify mark deleted [
+129 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-linux-arm-gnueabihf'
+129 silly reify ]
+130 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-freebsd-x64
+131 silly reify mark deleted [
+131 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-freebsd-x64'
+131 silly reify ]
+132 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-darwin-x64
+133 silly reify mark deleted [
+133 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-darwin-x64'
+133 silly reify ]
+134 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-darwin-arm64
+135 silly reify mark deleted [
+135 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-darwin-arm64'
+135 silly reify ]
+136 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@tailwindcss\oxide-android-arm64
+137 silly reify mark deleted [
+137 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@tailwindcss\\oxide-android-arm64'
+137 silly reify ]
+138 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-win32-ia32-msvc
+139 silly reify mark deleted [
+139 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+139 silly reify ]
+140 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-win32-arm64-msvc
+141 silly reify mark deleted [
+141 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+141 silly reify ]
+142 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-x64-musl
+143 silly reify mark deleted [
+143 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-x64-musl'
+143 silly reify ]
+144 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-x64-gnu
+145 silly reify mark deleted [
+145 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+145 silly reify ]
+146 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-s390x-gnu
+147 silly reify mark deleted [
+147 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+147 silly reify ]
+148 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-riscv64-gnu
+149 silly reify mark deleted [
+149 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+149 silly reify ]
+150 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-powerpc64le-gnu
+151 silly reify mark deleted [
+151 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-powerpc64le-gnu'
+151 silly reify ]
+152 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-arm64-musl
+153 silly reify mark deleted [
+153 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+153 silly reify ]
+154 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-arm64-gnu
+155 silly reify mark deleted [
+155 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+155 silly reify ]
+156 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-arm-musleabihf
+157 silly reify mark deleted [
+157 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+157 silly reify ]
+158 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-linux-arm-gnueabihf
+159 silly reify mark deleted [
+159 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+159 silly reify ]
+160 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-freebsd-x64
+161 silly reify mark deleted [
+161 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-freebsd-x64'
+161 silly reify ]
+162 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-freebsd-arm64
+163 silly reify mark deleted [
+163 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-freebsd-arm64'
+163 silly reify ]
+164 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-darwin-x64
+165 silly reify mark deleted [
+165 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-darwin-x64'
+165 silly reify ]
+166 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-darwin-arm64
+167 silly reify mark deleted [
+167 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-darwin-arm64'
+167 silly reify ]
+168 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-android-arm64
+169 silly reify mark deleted [
+169 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-android-arm64'
+169 silly reify ]
+170 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@rollup\rollup-android-arm-eabi
+171 silly reify mark deleted [
+171 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@rollup\\rollup-android-arm-eabi'
+171 silly reify ]
+172 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\win32-ia32
+173 silly reify mark deleted [
+173 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\win32-ia32'
+173 silly reify ]
+174 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\win32-arm64
+175 silly reify mark deleted [
+175 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\win32-arm64'
+175 silly reify ]
+176 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\sunos-x64
+177 silly reify mark deleted [
+177 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\sunos-x64'
+177 silly reify ]
+178 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\openharmony-arm64
+179 silly reify mark deleted [
+179 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\openharmony-arm64'
+179 silly reify ]
+180 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\openbsd-x64
+181 silly reify mark deleted [
+181 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\openbsd-x64'
+181 silly reify ]
+182 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\openbsd-arm64
+183 silly reify mark deleted [
+183 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\openbsd-arm64'
+183 silly reify ]
+184 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\netbsd-x64
+185 silly reify mark deleted [
+185 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\netbsd-x64'
+185 silly reify ]
+186 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\netbsd-arm64
+187 silly reify mark deleted [
+187 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\netbsd-arm64'
+187 silly reify ]
+188 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-x64
+189 silly reify mark deleted [
+189 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-x64'
+189 silly reify ]
+190 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-s390x
+191 silly reify mark deleted [
+191 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-s390x'
+191 silly reify ]
+192 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-riscv64
+193 silly reify mark deleted [
+193 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-riscv64'
+193 silly reify ]
+194 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-ppc64
+195 silly reify mark deleted [
+195 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-ppc64'
+195 silly reify ]
+196 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-mips64el
+197 silly reify mark deleted [
+197 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-mips64el'
+197 silly reify ]
+198 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-loong64
+199 silly reify mark deleted [
+199 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-loong64'
+199 silly reify ]
+200 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-ia32
+201 silly reify mark deleted [
+201 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-ia32'
+201 silly reify ]
+202 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-arm64
+203 silly reify mark deleted [
+203 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-arm64'
+203 silly reify ]
+204 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\linux-arm
+205 silly reify mark deleted [
+205 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\linux-arm'
+205 silly reify ]
+206 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\freebsd-x64
+207 silly reify mark deleted [
+207 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\freebsd-x64'
+207 silly reify ]
+208 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\freebsd-arm64
+209 silly reify mark deleted [
+209 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\freebsd-arm64'
+209 silly reify ]
+210 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\darwin-x64
+211 silly reify mark deleted [
+211 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\darwin-x64'
+211 silly reify ]
+212 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\darwin-arm64
+213 silly reify mark deleted [
+213 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\darwin-arm64'
+213 silly reify ]
+214 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\android-x64
+215 silly reify mark deleted [
+215 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\android-x64'
+215 silly reify ]
+216 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\android-arm64
+217 silly reify mark deleted [
+217 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\android-arm64'
+217 silly reify ]
+218 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\android-arm
+219 silly reify mark deleted [
+219 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\android-arm'
+219 silly reify ]
+220 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild\aix-ppc64
+221 silly reify mark deleted [
+221 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild\\aix-ppc64'
+221 silly reify ]
+222 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\win32-ia32
+223 silly reify mark deleted [
+223 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\win32-ia32'
+223 silly reify ]
+224 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\win32-arm64
+225 silly reify mark deleted [
+225 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\win32-arm64'
+225 silly reify ]
+226 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\sunos-x64
+227 silly reify mark deleted [
+227 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\sunos-x64'
+227 silly reify ]
+228 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\openbsd-x64
+229 silly reify mark deleted [
+229 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\openbsd-x64'
+229 silly reify ]
+230 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\netbsd-x64
+231 silly reify mark deleted [
+231 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\netbsd-x64'
+231 silly reify ]
+232 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-x64
+233 silly reify mark deleted [
+233 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-x64'
+233 silly reify ]
+234 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-s390x
+235 silly reify mark deleted [
+235 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-s390x'
+235 silly reify ]
+236 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-riscv64
+237 silly reify mark deleted [
+237 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-riscv64'
+237 silly reify ]
+238 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-ppc64
+239 silly reify mark deleted [
+239 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-ppc64'
+239 silly reify ]
+240 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-mips64el
+241 silly reify mark deleted [
+241 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-mips64el'
+241 silly reify ]
+242 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-loong64
+243 silly reify mark deleted [
+243 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-loong64'
+243 silly reify ]
+244 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-ia32
+245 silly reify mark deleted [
+245 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-ia32'
+245 silly reify ]
+246 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-arm64
+247 silly reify mark deleted [
+247 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-arm64'
+247 silly reify ]
+248 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\linux-arm
+249 silly reify mark deleted [
+249 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\linux-arm'
+249 silly reify ]
+250 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\freebsd-x64
+251 silly reify mark deleted [
+251 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\freebsd-x64'
+251 silly reify ]
+252 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\freebsd-arm64
+253 silly reify mark deleted [
+253 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\freebsd-arm64'
+253 silly reify ]
+254 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\darwin-x64
+255 silly reify mark deleted [
+255 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\darwin-x64'
+255 silly reify ]
+256 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\darwin-arm64
+257 silly reify mark deleted [
+257 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\darwin-arm64'
+257 silly reify ]
+258 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\android-x64
+259 silly reify mark deleted [
+259 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\android-x64'
+259 silly reify ]
+260 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\android-arm64
+261 silly reify mark deleted [
+261 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\android-arm64'
+261 silly reify ]
+262 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\android-arm
+263 silly reify mark deleted [
+263 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\android-arm'
+263 silly reify ]
+264 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\vite\node_modules\@esbuild\aix-ppc64
+265 silly reify mark deleted [
+265 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\vite\\node_modules\\@esbuild\\aix-ppc64'
+265 silly reify ]
+266 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\win32-ia32
+267 silly reify mark deleted [
+267 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\win32-ia32'
+267 silly reify ]
+268 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\win32-arm64
+269 silly reify mark deleted [
+269 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\win32-arm64'
+269 silly reify ]
+270 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\sunos-x64
+271 silly reify mark deleted [
+271 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\sunos-x64'
+271 silly reify ]
+272 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\openbsd-x64
+273 silly reify mark deleted [
+273 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\openbsd-x64'
+273 silly reify ]
+274 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\netbsd-x64
+275 silly reify mark deleted [
+275 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\netbsd-x64'
+275 silly reify ]
+276 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-x64
+277 silly reify mark deleted [
+277 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-x64'
+277 silly reify ]
+278 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-s390x
+279 silly reify mark deleted [
+279 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-s390x'
+279 silly reify ]
+280 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-riscv64
+281 silly reify mark deleted [
+281 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-riscv64'
+281 silly reify ]
+282 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-ppc64
+283 silly reify mark deleted [
+283 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-ppc64'
+283 silly reify ]
+284 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-mips64el
+285 silly reify mark deleted [
+285 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-mips64el'
+285 silly reify ]
+286 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-loong64
+287 silly reify mark deleted [
+287 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-loong64'
+287 silly reify ]
+288 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-ia32
+289 silly reify mark deleted [
+289 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-ia32'
+289 silly reify ]
+290 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-arm64
+291 silly reify mark deleted [
+291 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-arm64'
+291 silly reify ]
+292 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\linux-arm
+293 silly reify mark deleted [
+293 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\linux-arm'
+293 silly reify ]
+294 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\freebsd-x64
+295 silly reify mark deleted [
+295 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\freebsd-x64'
+295 silly reify ]
+296 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\freebsd-arm64
+297 silly reify mark deleted [
+297 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\freebsd-arm64'
+297 silly reify ]
+298 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\darwin-x64
+299 silly reify mark deleted [
+299 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\darwin-x64'
+299 silly reify ]
+300 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\darwin-arm64
+301 silly reify mark deleted [
+301 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\darwin-arm64'
+301 silly reify ]
+302 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\android-x64
+303 silly reify mark deleted [
+303 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\android-x64'
+303 silly reify ]
+304 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\android-arm64
+305 silly reify mark deleted [
+305 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\android-arm64'
+305 silly reify ]
+306 verbose reify failed optional dependency C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@esbuild-kit\core-utils\node_modules\@esbuild\android-arm
+307 silly reify mark deleted [
+307 silly reify   'C:\\Users\\YY839XK\\Downloads\\AmazeonERP 1\\ERP v0\\node_modules\\@esbuild-kit\\core-utils\\node_modules\\@esbuild\\android-arm'
+307 silly reify ]
+308 http cache minizlib@https://registry.npmjs.org/minizlib/-/minizlib-2.1.2.tgz 0ms (cache hit)
+309 http cache chownr@https://registry.npmjs.org/chownr/-/chownr-2.0.0.tgz 0ms (cache hit)
+310 http cache fs-minipass@https://registry.npmjs.org/fs-minipass/-/fs-minipass-2.1.0.tgz 0ms (cache hit)
+311 http cache node-domexception@https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz 0ms (cache hit)
+312 http cache web-streams-polyfill@https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz 0ms (cache hit)
+313 http cache formdata-polyfill@https://registry.npmjs.org/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz 0ms (cache hit)
+314 http cache fetch-blob@https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz 0ms (cache hit)
+315 http cache data-uri-to-buffer@https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz 0ms (cache hit)
+316 http cache @railway/cli@https://registry.npmjs.org/@railway/cli/-/cli-4.11.1.tgz 0ms (cache hit)
+317 http cache node-fetch@https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz 0ms (cache hit)
+318 http cache @napi-rs/triples@https://registry.npmjs.org/@napi-rs/triples/-/triples-1.2.0.tgz 0ms (cache hit)
+319 http cache tar@https://registry.npmjs.org/tar/-/tar-6.2.1.tgz 0ms (cache hit)
+320 http cache yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 0ms (cache hit)
+321 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+322 http cache yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 0ms (cache hit)
+323 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-3.3.6.tgz 0ms (cache hit)
+324 http cache yallist@https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz 0ms (cache hit)
+325 http cache minipass@https://registry.npmjs.org/minipass/-/minipass-5.0.0.tgz 0ms (cache hit)
+326 http cache mkdirp@https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz 1ms (cache hit)
+327 warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+328 info run @railway/cli@4.11.1 postinstall node_modules/@railway/cli node ./npm-install/postinstall.js
+329 info run @railway/cli@4.11.1 postinstall { code: 1, signal: null }
+330 verbose stack Error: command failed
+330 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:22:22)
+330 verbose stack     at spawnWithShell (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:124:10)
+330 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:12:12)
+330 verbose stack     at runScriptPkg (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script-pkg.js:77:13)
+330 verbose stack     at runScript (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script.js:9:12)
+330 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\rebuild.js:329:17
+330 verbose stack     at run (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:67:22)
+330 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:84:9
+330 verbose stack     at new Promise (<anonymous>)
+330 verbose stack     at callLimit (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:35:69)
+331 verbose pkgid @railway/cli@4.11.1
+332 error code 1
+333 error path C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\node_modules\@railway\cli
+334 error command failed
+335 error command C:\WINDOWS\system32\cmd.exe /d /s /c node ./npm-install/postinstall.js
+336 error https://github.com/railwayapp/cli/releases/download/v4.11.1/railway-v4.11.1-x86_64-pc-windows-gnu.tar.gz
+337 error FetchError: request to https://github.com/railwayapp/cli/releases/download/v4.11.1/railway-v4.11.1-x86_64-pc-windows-gnu.tar.gz failed, reason: unable to get local issuer certificate
+337 error     at ClientRequest.<anonymous> (file:///C:/Users/YY839XK/Downloads/AmazeonERP%201/ERP%20v0/node_modules/node-fetch/src/index.js:108:11)
+337 error     at ClientRequest.emit (node:events:518:28)
+337 error     at emitErrorEvent (node:_http_client:104:11)
+337 error     at TLSSocket.socketErrorListener (node:_http_client:518:5)
+337 error     at TLSSocket.emit (node:events:518:28)
+337 error     at emitErrorNT (node:internal/streams/destroy:170:8)
+337 error     at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+337 error     at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+337 error   type: 'system',
+337 error   errno: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+337 error   code: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+337 error   erroredSysCall: undefined
+337 error }
+338 silly unfinished npm timer reify 1763580744578
+339 silly unfinished npm timer reify:build 1763580750016
+340 silly unfinished npm timer build 1763580750018
+341 silly unfinished npm timer build:deps 1763580750019
+342 silly unfinished npm timer build:run:postinstall 1763580750052
+343 silly unfinished npm timer build:run:postinstall:node_modules/@railway/cli 1763580750052
+344 verbose cwd C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0
+345 verbose os Windows_NT 10.0.22631
+346 verbose node v22.16.0
+347 verbose npm  v10.9.2
+348 verbose exit 1
+349 verbose code 1
+350 error A complete log of this run can be found in: C:\Users\YY839XK\Downloads\AmazeonERP 1\ERP v0\.npm-cache\_logs\2025-11-19T19_32_22_706Z-debug-0.log
