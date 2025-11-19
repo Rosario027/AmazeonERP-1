@@ -203,10 +203,13 @@ export default function CreateInvoice() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
+      // apiRequest returns a Fetch Response — parse JSON here so onSuccess receives the parsed invoice object
       if (isEditing && editInvoiceId) {
-        return await apiRequest("PATCH", `/api/invoices/${editInvoiceId}`, data);
+        const res = await apiRequest("PATCH", `/api/invoices/${editInvoiceId}`, data);
+        return await res.json();
       } else {
-        return await apiRequest("POST", "/api/invoices", data);
+        const res = await apiRequest("POST", "/api/invoices", data);
+        return await res.json();
       }
     },
     onSuccess: (data: any) => {
