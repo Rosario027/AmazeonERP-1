@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Amazeon ERP">
+  <rect width="64" height="64" rx="12" fill="#0ea5a4"/>
+  <g transform="translate(0,0)">
+    <text x="50%" y="52%" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="34" fill="white" font-weight="700">AE</text>
+  </g>
+</svg>
