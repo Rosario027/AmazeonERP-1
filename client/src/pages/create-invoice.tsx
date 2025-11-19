@@ -42,6 +42,7 @@ export default function CreateInvoice() {
   const isEditing = !!editInvoiceId;
 
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Cash");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,6 +71,7 @@ export default function CreateInvoice() {
   useEffect(() => {
     if (existingInvoice && isEditing) {
       setCustomerName(existingInvoice.customerName || "");
+      setCustomerPhone(existingInvoice.customerPhone || "");
       setPaymentMode(existingInvoice.paymentMode || "Cash");
       setInvoiceNumberForEdit(existingInvoice.invoiceNumber || "");
       setStoredGstMode(existingInvoice.gstMode || "inclusive");
@@ -221,11 +223,23 @@ export default function CreateInvoice() {
   // Payment mode is locked once items are added, so no recalculation is needed
 
   const handleSave = async () => {
+    // Basic validations
     if (!customerName || items.length === 0) {
       toast({
         variant: "destructive",
         title: "Validation Error",
         description: "Please fill in all required fields and add at least one item",
+      });
+      return;
+    }
+
+    // Validate phone: must be exactly 10 digits
+    const digitsOnly = customerPhone.replace(/\D/g, "");
+    if (digitsOnly.length !== 10) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Customer number must be exactly 10 digits",
       });
       return;
     }
@@ -238,6 +252,7 @@ export default function CreateInvoice() {
     saveMutation.mutate({
       invoiceType: "B2C",
       customerName,
+      customerPhone: customerPhone.replace(/\D/g, ""),
       paymentMode,
       gstMode,
       items: items.map((item) => ({
@@ -303,6 +318,21 @@ export default function CreateInvoice() {
                   placeholder="Enter customer name"
                   className="h-12"
                   data-testid="input-customer-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone" className="text-sm font-medium">
+                  Customer Number <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerPhone"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile number"
+                  className="h-12"
+                  data-testid="input-customer-phone"
+                  maxLength={10}
                 />
               </div>
 
@@ -471,6 +501,7 @@ export default function CreateInvoice() {
       <InvoiceReceipt
         invoiceNumber={invoiceNumber}
         customerName={customerName}
+        customerPhone={customerPhone}
         items={items}
         subtotal={subtotal}
         grandTotal={grandTotal}
