@@ -208,6 +208,15 @@ export default function CreateInvoice() {
     setPaymentMode(newPaymentMode);
   };
 
+  // Recalculate items when GST mode settings change in admin settings so changes reflect in realtime
+  useEffect(() => {
+    if (items.length > 0) {
+      // Reuse existing paymentMode to determine which GST mode applies
+      recalcItemsForPaymentMode(paymentMode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashGstMode, onlineGstMode]);
+
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest returns a Fetch Response — parse JSON here so onSuccess receives the parsed invoice object
