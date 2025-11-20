@@ -37,7 +37,8 @@ export default function Expenses() {
 
   const addMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/expenses", data);
+      const res = await apiRequest("POST", "/api/expenses", data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
@@ -72,7 +73,8 @@ export default function Expenses() {
 
   const editMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: typeof formData }) => {
-      return await apiRequest("PATCH", `/api/expenses/${id}`, data);
+      const res = await apiRequest("PATCH", `/api/expenses/${id}`, data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
@@ -108,7 +110,9 @@ export default function Expenses() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/expenses/${id}`);
+      const res = await apiRequest("DELETE", `/api/expenses/${id}`);
+      // DELETE returns 204 No Content; return ok status
+      return res.status === 204;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });

@@ -96,6 +96,9 @@ function renderMainApp(user: any) {
               <Route path="/admin/expenses">
                 {() => <ProtectedRoute component={Expenses} adminOnly />}
               </Route>
+              <Route path="/expenses">
+                {() => <ProtectedRoute component={Expenses} />}
+              </Route>
               <Route path="/admin/settings">
                 {() => <ProtectedRoute component={Settings} adminOnly />}
               </Route>
