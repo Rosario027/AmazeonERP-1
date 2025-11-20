@@ -323,6 +323,9 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lte(expenses.createdAt, endDate));
     }
 
+    // Exclude deleted expenses by default
+    conditions.push(isNull(expenses.deletedAt));
+
     // If the caller is not admin, only return expenses created by that user
     if (userId && !adminView) {
       conditions.push(eq(expenses.createdBy, userId));
@@ -350,8 +353,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteExpense(id: number): Promise<boolean> {
-    await db.delete(expenses).where(eq(expenses.id, id));
-    return true;
+    // Soft-delete the expense so dashboards/statistics can exclude it
+    const [updated] = await db
+      .update(expenses)
+      .set({ deletedAt: new Date() })
+      .where(eq(expenses.id, id))
+      .returning();
+    return !!updated;
   }
 
   async getSalesStats(): Promise<{
@@ -370,32 +378,32 @@ export class DatabaseStorage implements IStorage {
     const [todaySalesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${invoices.grandTotal}), 0)` })
       .from(invoices)
-      .where(gte(invoices.createdAt, todayStart));
+      .where(and(gte(invoices.createdAt, todayStart), isNull(invoices.deletedAt)));
 
     const [weekSalesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${invoices.grandTotal}), 0)` })
       .from(invoices)
-      .where(gte(invoices.createdAt, weekStart));
+      .where(and(gte(invoices.createdAt, weekStart), isNull(invoices.deletedAt)));
 
     const [monthSalesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${invoices.grandTotal}), 0)` })
       .from(invoices)
-      .where(gte(invoices.createdAt, monthStart));
+      .where(and(gte(invoices.createdAt, monthStart), isNull(invoices.deletedAt)));
 
     const [todayExpensesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${expenses.amount}), 0)` })
       .from(expenses)
-      .where(gte(expenses.createdAt, todayStart));
+      .where(and(gte(expenses.createdAt, todayStart), isNull(expenses.deletedAt)));
 
     const [weekExpensesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${expenses.amount}), 0)` })
       .from(expenses)
-      .where(gte(expenses.createdAt, weekStart));
+      .where(and(gte(expenses.createdAt, weekStart), isNull(expenses.deletedAt)));
 
     const [monthExpensesResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(${expenses.amount}), 0)` })
       .from(expenses)
-      .where(gte(expenses.createdAt, monthStart));
+      .where(and(gte(expenses.createdAt, monthStart), isNull(expenses.deletedAt)));
 
     return {
       todaySales: parseFloat(todaySalesResult?.total || "0"),

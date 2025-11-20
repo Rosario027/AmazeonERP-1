@@ -66,6 +66,7 @@ export const expenses = pgTable("expenses", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   category: text("category"),
   createdBy: varchar("created_by"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -112,6 +113,7 @@ export const insertInvoiceItemSchema = createInsertSchema(invoiceItems);
 
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   createdAt: true,
+  deletedAt: true,
 });
 
 export const insertSettingSchema = createInsertSchema(settings).omit({
