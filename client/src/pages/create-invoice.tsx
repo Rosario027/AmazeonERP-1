@@ -474,13 +474,12 @@ export default function CreateInvoice() {
                         {items.map((item, index) => (
                           <tr key={index} className="border-b hover-elevate">
                             <td className="py-2 font-medium">{item.itemName}</td>
-                            <td className="py-2"><Badge variant="outline" className="text-xs">{item.hsnCode}</Badge></td>
-                                <td className="py-2">
-                                  {item.hsnCode}
-                                  {item.description && (
-                                    <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
-                                  )}
-                                </td>
+                            <td className="py-2">
+                              <Badge variant="outline" className="text-xs">{item.hsnCode}</Badge>
+                              {item.description && (
+                                <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
+                              )}
+                            </td>
                             <td className="text-right py-2">{item.quantity}</td>
                             <td className="text-right py-2">₹{parseFloat(item.rate).toFixed(2)}</td>
                             <td className="text-right py-2 font-semibold">₹{item.taxableValue.toFixed(2)}</td>
