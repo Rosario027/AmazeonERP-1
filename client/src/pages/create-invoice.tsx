@@ -183,6 +183,10 @@ export default function CreateInvoice() {
 
     return { subtotal, totalCgst, totalSgst, totalGst, grandTotal };
   }, [items]);
+  
+  // Round off to nearest rupee
+  const roundedGrandTotal = useMemo(() => Math.round(grandTotal), [grandTotal]);
+  const roundOffAmount = useMemo(() => +(roundedGrandTotal - grandTotal), [roundedGrandTotal, grandTotal]);
 
   const recalcItemsForPaymentMode = (newPaymentMode: "Cash" | "Online") => {
     const gstMode = newPaymentMode === "Cash" ? cashGstMode : onlineGstMode;
@@ -253,7 +257,11 @@ export default function CreateInvoice() {
       }
       if (!isEditing) {
         setCustomerName("");
+        setCustomerPhone("");
+        setPaymentMode("Cash");
         setItems([]);
+        setInvoiceNumberForEdit("");
+        setStoredGstMode(null);
       }
     },
     onError: () => {
@@ -536,6 +544,10 @@ export default function CreateInvoice() {
                   <span>SGST:</span>
                   <span className="font-medium">₹{totalSgst.toFixed(2)}</span>
                 </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Round Off:</span>
+                    <span className="font-medium">₹{roundOffAmount.toFixed(2)}</span>
+                  </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Total GST:</span>
                   <span className="font-medium">₹{totalGst.toFixed(2)}</span>
@@ -543,9 +555,9 @@ export default function CreateInvoice() {
                 <div className="border-t pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-semibold">Grand Total:</span>
-                    <span className="text-2xl font-bold text-primary" data-testid="text-grand-total">
-                      ₹{grandTotal.toFixed(2)}
-                    </span>
+                      <span className="text-2xl font-bold text-primary" data-testid="text-grand-total">
+                        ₹{roundedGrandTotal.toFixed(2)}
+                      </span>
                   </div>
                 </div>
               </div>

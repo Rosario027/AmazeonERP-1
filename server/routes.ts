@@ -213,6 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const grandTotal = subtotal + totalGst;
+      const roundedGrandTotal = Math.round(grandTotal);
 
       const invoice = await storage.createInvoice(
         {
@@ -225,7 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gstMode,
           subtotal: subtotal.toString(),
           gstAmount: totalGst.toString(),
-          grandTotal: grandTotal.toString(),
+          // Store the rounded grand total (nearest rupee)
+          grandTotal: roundedGrandTotal.toString(),
         },
         invoiceItems
       );
@@ -279,6 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const grandTotal = subtotal + totalGst;
+        const roundedGrandTotal = Math.round(grandTotal);
 
         updateData = {
           customerName,
@@ -287,7 +290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentMode,
           subtotal: subtotal.toString(),
           gstAmount: totalGst.toString(),
-          grandTotal: grandTotal.toString(),
+          // Store the rounded grand total (nearest rupee)
+          grandTotal: roundedGrandTotal.toString(),
         };
 
         const invoice = await storage.updateInvoice(id, updateData, invoiceItems);

@@ -108,9 +108,11 @@ export default function PrintInvoice() {
   }));
 
   const subtotal = parseFloat(invoice.subtotal);
-  const grandTotal = parseFloat(invoice.grandTotal);
   const totalCgst = items.reduce((sum, it) => sum + (it.cgstAmount || 0), 0);
   const totalSgst = items.reduce((sum, it) => sum + (it.sgstAmount || 0), 0);
+  const grandTotalRaw = subtotal + totalCgst + totalSgst;
+  const roundedGrandTotal = Math.round(grandTotalRaw);
+  const roundOff = +(roundedGrandTotal - grandTotalRaw);
 
   return (
     <div style={{
@@ -243,9 +245,13 @@ export default function PrintInvoice() {
             <span>Total GST:</span>
             <span>₹{(totalCgst + totalSgst).toFixed(2)}</span>
           </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px", color: "#333" }}>
+            <span>Round Off:</span>
+            <span>₹{roundOff.toFixed(2)}</span>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", borderTop: "1px solid #000", paddingTop: "4px" }}>
             <span>TOTAL:</span>
-            <span>₹{grandTotal.toFixed(2)}</span>
+            <span>₹{roundedGrandTotal.toFixed(2)}</span>
           </div>
         </div>
 

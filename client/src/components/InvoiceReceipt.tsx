@@ -36,6 +36,12 @@ export function InvoiceReceipt({
   const balance = grandTotal - paid;
   const [logoError, setLogoError] = useState(false);
 
+  const totalCgst = items.reduce((s, it) => s + (it.cgstAmount || 0), 0);
+  const totalSgst = items.reduce((s, it) => s + (it.sgstAmount || 0), 0);
+  const rawGrand = subtotal + totalCgst + totalSgst;
+  const roundedGrand = Math.round(rawGrand);
+  const roundOff = roundedGrand - rawGrand;
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -179,11 +185,15 @@ export function InvoiceReceipt({
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "10px" }}>
             <span>CGST:</span>
-            <span>₹{items.reduce((sum, item) => sum + item.cgstAmount, 0).toFixed(2)}</span>
+            <span>₹{totalCgst.toFixed(2)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px" }}>
             <span>SGST:</span>
-            <span>₹{items.reduce((sum, item) => sum + item.sgstAmount, 0).toFixed(2)}</span>
+            <span>₹{totalSgst.toFixed(2)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px", color: "#333" }}>
+            <span>Round Off:</span>
+            <span>₹{roundOff.toFixed(2)}</span>
           </div>
           <div style={{
             display: "flex",
@@ -193,7 +203,7 @@ export function InvoiceReceipt({
             fontSize: "13px",
           }}>
             <span>Grand Total:</span>
-            <span>₹{grandTotal.toFixed(2)}</span>
+            <span>₹{roundedGrand.toFixed(2)}</span>
           </div>
           {paid > 0 && (
             <>
