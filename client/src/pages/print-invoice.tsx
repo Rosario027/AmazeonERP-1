@@ -2,7 +2,7 @@ import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { SHOP_INFO } from "@shared/shopInfo";
 import logoImg from "@assets/1762677792449-0d76ba93-0eba-48fa-927f-62011c24e28f_1_1762963626825.jpg";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 
 interface InvoiceItem {
   itemName: string;
@@ -198,8 +198,8 @@ export default function PrintInvoice() {
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <>
-                <tr key={index}>
+              <React.Fragment key={index}>
+                <tr>
                   <td style={{ padding: "4px 0" }}>{item.itemName}</td>
                   <td style={{ textAlign: "center", padding: "4px 0" }}>{item.quantity}</td>
                   <td style={{ textAlign: "right", padding: "4px 0" }}>₹{item.rate}</td>
@@ -210,7 +210,14 @@ export default function PrintInvoice() {
                     HSN: {item.hsnCode} | Tax: ₹{item.taxableValue.toFixed(2)} + ₹{(item.cgstAmount + item.sgstAmount).toFixed(2)} GST
                   </td>
                 </tr>
-              </>
+                {item.description && (
+                  <tr>
+                    <td colSpan={4} style={{ fontSize: "9px", color: "#555", paddingBottom: "4px" }}>
+                      {item.description}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
