@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { pool } from "./db";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -46,7 +47,19 @@ app.use((req, res, next) => {
   next();
 });
 
+async function ensureExpensesColumns() {
+  try {
+    // Add missing columns if they don't exist so the running app can work without manual DB migration
+    await pool.query(`ALTER TABLE IF EXISTS expenses ADD COLUMN IF NOT EXISTS created_by varchar;`);
+    await pool.query(`ALTER TABLE IF EXISTS expenses ADD COLUMN IF NOT EXISTS deleted_at timestamp;`);
+    log("Ensured expenses table has created_by and deleted_at columns");
+  } catch (err) {
+    log("Failed to ensure expenses columns: " + String(err));
+  }
+}
+
 (async () => {
+  await ensureExpensesColumns();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

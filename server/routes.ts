@@ -358,7 +358,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(expense);
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      // Log full error for diagnostics and return a helpful message
+      console.error("Error creating expense:", error instanceof Error ? error.stack || error.message : error);
+      res.status(500).json({ message: "Failed to create expense. Check server logs for details." });
     }
   });
 
