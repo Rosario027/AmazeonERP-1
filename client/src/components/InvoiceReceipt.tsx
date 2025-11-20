@@ -10,6 +10,7 @@ interface InvoiceReceiptProps {
   items: Array<{
     itemName: string;
     hsnCode: string;
+    description?: string;
     quantity: number;
     rate: string;
     taxableValue: number;
@@ -148,6 +149,11 @@ export function InvoiceReceipt({
               <div style={{ fontSize: "9px", color: "#333", marginBottom: "2px" }}>
                 HSN: {item.hsnCode} | Qty: {item.quantity} x ₹{parseFloat(item.rate).toFixed(2)}
               </div>
+              {item.description && (
+                <div style={{ fontSize: "9px", color: "#666", marginBottom: "2px" }}>
+                  {item.description}
+                </div>
+              )}
               <div style={{ fontSize: "9px", color: "#555", display: "flex", justifyContent: "space-between" }}>
                 <span>Taxable: ₹{item.taxableValue.toFixed(2)}</span>
                 <span>CGST: ₹{item.cgstAmount.toFixed(2)} | SGST: ₹{item.sgstAmount.toFixed(2)}</span>

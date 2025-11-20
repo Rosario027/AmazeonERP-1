@@ -19,6 +19,7 @@ interface InvoiceItem {
   productId: number | null;
   itemName: string;
   hsnCode: string;
+  description?: string;
   rate: string;
   quantity: number;
   gstPercentage: number;
@@ -143,6 +144,7 @@ export default function CreateInvoice() {
     const newItem: InvoiceItem = {
       productId: product?.id || null,
       itemName: item.productName,
+      description: item.productDescription || "",
       hsnCode: product?.hsnCode || "",
       rate: item.rate,
       quantity: quantity,
@@ -299,10 +301,11 @@ export default function CreateInvoice() {
       customerPhone: customerPhone.replace(/\D/g, ""),
       paymentMode,
       gstMode,
-      items: items.map((item) => ({
+        items: items.map((item) => ({
         productId: item.productId,
         itemName: item.itemName,
         hsnCode: item.hsnCode,
+          description: item.description || null,
         rate: item.rate,
         quantity: item.quantity,
         gstPercentage: (item.cgstPercentage + item.sgstPercentage).toFixed(2),
@@ -472,6 +475,12 @@ export default function CreateInvoice() {
                           <tr key={index} className="border-b hover-elevate">
                             <td className="py-2 font-medium">{item.itemName}</td>
                             <td className="py-2"><Badge variant="outline" className="text-xs">{item.hsnCode}</Badge></td>
+                                <td className="py-2">
+                                  {item.hsnCode}
+                                  {item.description && (
+                                    <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
+                                  )}
+                                </td>
                             <td className="text-right py-2">{item.quantity}</td>
                             <td className="text-right py-2">₹{parseFloat(item.rate).toFixed(2)}</td>
                             <td className="text-right py-2 font-semibold">₹{item.taxableValue.toFixed(2)}</td>

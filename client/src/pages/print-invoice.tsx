@@ -98,6 +98,7 @@ export default function PrintInvoice() {
   const items = invoice.items.map(item => ({
     itemName: item.itemName,
     hsnCode: item.hsnCode,
+    description: item.description || "",
     quantity: item.quantity,
     rate: item.rate,
     taxableValue: parseFloat(item.taxableValue),

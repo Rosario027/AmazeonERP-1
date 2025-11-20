@@ -34,6 +34,7 @@ interface InvoiceItemDialogProps {
     quantity: number;
     rate: string;
     gstPercentage: string;
+    productDescription?: string;
   }) => void;
 }
 
@@ -47,6 +48,7 @@ export function InvoiceItemDialog({
   const [quantity, setQuantity] = useState<number>(1);
   const [rate, setRate] = useState<string>("");
   const [gstPercentage, setGstPercentage] = useState<string>("18");
+  const [productDescription, setProductDescription] = useState<string>("");
 
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId);
@@ -68,12 +70,14 @@ export function InvoiceItemDialog({
       quantity,
       rate,
       gstPercentage,
+      productDescription,
     });
 
     setSelectedProductId("");
     setQuantity(1);
     setRate("");
     setGstPercentage("18");
+    setProductDescription("");
     onOpenChange(false);
   };
 
@@ -144,6 +148,20 @@ export function InvoiceItemDialog({
               onChange={(e) => setGstPercentage(e.target.value)}
               className="h-12"
               data-testid="input-dialog-gst"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="productDescription" className="text-sm font-medium">
+              Product Description
+            </Label>
+            <Input
+              id="productDescription"
+              value={productDescription}
+              onChange={(e) => setProductDescription(e.target.value)}
+              placeholder="Optional product description"
+              className="h-12"
+              data-testid="input-dialog-product-description"
             />
           </div>
         </div>
