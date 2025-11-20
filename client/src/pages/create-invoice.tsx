@@ -84,6 +84,7 @@ export default function CreateInvoice() {
         const formattedItems = existingInvoice.items.map((item: any) => ({
           productId: item.productId,
           itemName: item.itemName,
+          description: item.description || "",
           hsnCode: item.hsnCode,
           rate: item.rate,
           quantity: item.quantity,

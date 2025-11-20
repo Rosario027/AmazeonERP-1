@@ -197,6 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           productId: item.productId ? parseInt(item.productId) : null,
           itemName: item.itemName,
+          description: item.description || null,
           hsnCode: item.hsnCode,
           rate: parseFloat(item.rate).toString(),
           quantity: item.quantity,
@@ -262,6 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             productId: item.productId ? parseInt(item.productId) : null,
             itemName: item.itemName,
+            description: item.description || null,
             hsnCode: item.hsnCode,
             rate: parseFloat(item.rate).toString(),
             quantity: item.quantity,
