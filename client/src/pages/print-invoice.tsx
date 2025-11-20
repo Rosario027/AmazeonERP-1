@@ -109,6 +109,8 @@ export default function PrintInvoice() {
 
   const subtotal = parseFloat(invoice.subtotal);
   const grandTotal = parseFloat(invoice.grandTotal);
+  const totalCgst = items.reduce((sum, it) => sum + (it.cgstAmount || 0), 0);
+  const totalSgst = items.reduce((sum, it) => sum + (it.sgstAmount || 0), 0);
 
   return (
     <div style={{
@@ -229,9 +231,17 @@ export default function PrintInvoice() {
             <span>Subtotal:</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+            <span>CGST:</span>
+            <span>₹{totalCgst.toFixed(2)}</span>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-            <span>GST:</span>
-            <span>₹{(grandTotal - subtotal).toFixed(2)}</span>
+            <span>SGST:</span>
+            <span>₹{totalSgst.toFixed(2)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px", color: "#333" }}>
+            <span>Total GST:</span>
+            <span>₹{(totalCgst + totalSgst).toFixed(2)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", borderTop: "1px solid #000", paddingTop: "4px" }}>
             <span>TOTAL:</span>
