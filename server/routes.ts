@@ -652,8 +652,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Settings - admin only
-  app.get("/api/settings", authMiddleware, adminMiddleware, async (req, res) => {
+  // Settings - read by any authenticated user; updates remain admin-only
+  app.get("/api/settings", authMiddleware, async (req, res) => {
     try {
       const settings = await storage.getSettings();
       res.json(settings);
