@@ -34,6 +34,11 @@ export function AppSidebar() {
       url: "/expenses",
       icon: DollarSign,
     },
+    {
+      title: "Finance",
+      url: "/finance",
+      icon: DollarSign,
+    },
   ];
 
   const adminMenuItems = [
@@ -71,6 +76,11 @@ export function AppSidebar() {
       title: "Settings",
       url: "/admin/settings",
       icon: Settings,
+    },
+    {
+      title: "Finance",
+      url: "/admin/finance",
+      icon: DollarSign,
     },
   ];
 
