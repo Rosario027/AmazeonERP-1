@@ -45,7 +45,7 @@ export default function CreateInvoice() {
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Cash");
+  const [paymentMode, setPaymentMode] = useState<"Cash" | "Online" | "Cash+Card">("Cash");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [invoiceNumberForEdit, setInvoiceNumberForEdit] = useState("");
@@ -53,6 +53,9 @@ export default function CreateInvoice() {
   const lastResetTimestamp = useRef<string | null>(null);
   const printAfterSaveRef = useRef(false);
   const printWindowRef = useRef<Window | null>(null);
+  const [splitModalOpen, setSplitModalOpen] = useState(false);
+  const [cashAmount, setCashAmount] = useState(0);
+  const [cardAmount, setCardAmount] = useState(0);
 
   // Reset form to blank state when navigating back from print with ?new= parameter
   useEffect(() => {
@@ -188,8 +191,11 @@ export default function CreateInvoice() {
   const roundedGrandTotal = useMemo(() => Math.round(grandTotal), [grandTotal]);
   const roundOffAmount = useMemo(() => +(roundedGrandTotal - grandTotal), [roundedGrandTotal, grandTotal]);
 
-  const recalcItemsForPaymentMode = (newPaymentMode: "Cash" | "Online") => {
-    const gstMode = newPaymentMode === "Cash" ? cashGstMode : onlineGstMode;
+  const recalcItemsForPaymentMode = (newPaymentMode: "Cash" | "Online" | "Cash+Card") => {
+    let gstMode: GstMode;
+    if (newPaymentMode === "Cash") gstMode = cashGstMode;
+    else if (newPaymentMode === "Online") gstMode = onlineGstMode;
+    else gstMode = onlineGstMode; // For split, default to online mode for GST
     const recalculated = items.map((item) => {
       const calculated = calculateInvoiceItem(item.originalRate, item.quantity, item.gstPercentage, gstMode);
       const cgstPercentage = item.gstPercentage / 2;
@@ -206,6 +212,11 @@ export default function CreateInvoice() {
     });
     setItems(recalculated);
     setPaymentMode(newPaymentMode);
+    if (newPaymentMode === "Cash+Card") {
+      setSplitModalOpen(true);
+      setCashAmount(0);
+      setCardAmount(roundedGrandTotal);
+    }
   };
 
   // Recalculate items when GST mode settings change in admin settings so changes reflect in realtime
@@ -319,11 +330,13 @@ export default function CreateInvoice() {
       customerPhone: customerPhone.replace(/\D/g, ""),
       paymentMode,
       gstMode,
-        items: items.map((item) => ({
+      cashAmount: paymentMode === "Cash+Card" ? cashAmount : (paymentMode === "Cash" ? roundedGrandTotal : 0),
+      cardAmount: paymentMode === "Cash+Card" ? cardAmount : (paymentMode === "Online" ? roundedGrandTotal : 0),
+      items: items.map((item) => ({
         productId: item.productId,
         itemName: item.itemName,
         hsnCode: item.hsnCode,
-          description: item.description || null,
+        description: item.description || null,
         rate: item.rate,
         quantity: item.quantity,
         gstPercentage: (item.cgstPercentage + item.sgstPercentage).toFixed(2),
@@ -435,13 +448,14 @@ export default function CreateInvoice() {
                 <Label htmlFor="paymentMode" className="text-sm font-medium">
                   Payment Mode <span className="text-destructive">*</span>
                 </Label>
-                <Select value={paymentMode} onValueChange={(value: "Cash" | "Online") => setPaymentMode(value)} disabled={isEditing || items.length > 0}>
+                <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)} disabled={isEditing || items.length > 0}>
                   <SelectTrigger className="h-12" data-testid="select-payment-mode">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
                     <SelectItem value="Online">Online</SelectItem>
+                    <SelectItem value="Cash+Card">Cash + Card</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -576,13 +590,14 @@ export default function CreateInvoice() {
                   <Label htmlFor="paymentModeSummary" className="text-sm font-medium">
                     Payment Mode <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={paymentMode} onValueChange={(value: "Cash" | "Online") => recalcItemsForPaymentMode(value)} disabled={isEditing}>
+                  <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)} disabled={isEditing}>
                     <SelectTrigger className="h-12" data-testid="select-payment-mode-summary">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Cash">Cash</SelectItem>
                       <SelectItem value="Online">Online</SelectItem>
+                      <SelectItem value="Cash+Card">Cash + Card</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -634,6 +649,77 @@ export default function CreateInvoice() {
             <div className="p-4 flex gap-2">
               <Button onClick={onPreviewPrint} data-testid="button-preview-print">Save & Print</Button>
               <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={splitModalOpen} onOpenChange={setSplitModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Split Payment: Cash + Card</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total Bill:</span>
+                <span>₹{roundedGrandTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Label>Cash Amount</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={roundedGrandTotal}
+                    value={cashAmount}
+                    onChange={e => {
+                      let val = parseFloat(e.target.value) || 0;
+                      if (val > roundedGrandTotal) val = roundedGrandTotal;
+                      setCashAmount(val);
+                      setCardAmount(Number((roundedGrandTotal - val).toFixed(2)));
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label>Card/Online Amount</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={roundedGrandTotal}
+                    value={cardAmount}
+                    onChange={e => {
+                      let val = parseFloat(e.target.value) || 0;
+                      if (val > roundedGrandTotal) val = roundedGrandTotal;
+                      setCardAmount(val);
+                      setCashAmount(Number((roundedGrandTotal - val).toFixed(2)));
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Balance:</span>
+                <span className={cashAmount + cardAmount !== roundedGrandTotal ? "text-destructive" : "text-green-700"}>
+                  ₹{(roundedGrandTotal - cashAmount - cardAmount).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  onClick={() => {
+                    setSplitModalOpen(false);
+                    // If user left both zero, default all to card
+                    if (cashAmount + cardAmount !== roundedGrandTotal) {
+                      setCashAmount(0);
+                      setCardAmount(roundedGrandTotal);
+                    }
+                  }}
+                  disabled={cashAmount + cardAmount !== roundedGrandTotal}
+                >
+                  Confirm
+                </Button>
+                <Button variant="ghost" onClick={() => {
+                  setSplitModalOpen(false);
+                  setPaymentMode("Cash");
+                }}>Cancel</Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
