@@ -667,7 +667,8 @@ export default function CreateInvoice() {
                 <div className="flex-1">
                   <Label>Cash Amount</Label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     min={0}
                     max={roundedGrandTotal}
                     value={cashAmount}
@@ -682,7 +683,8 @@ export default function CreateInvoice() {
                 <div className="flex-1">
                   <Label>Card/Online Amount</Label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     min={0}
                     max={roundedGrandTotal}
                     value={cardAmount}
