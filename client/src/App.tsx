@@ -19,6 +19,8 @@ import Expenses from "@/pages/expenses";
 import Settings from "@/pages/settings";
 import PrintInvoice from "@/pages/print-invoice";
 import NotFound from "@/pages/not-found";
+import Finance from "@/pages/finance";
+import AdminFinance from "@/pages/admin-finance";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: any; adminOnly?: boolean }) {
   const { user } = useAuth();
@@ -101,6 +103,12 @@ function renderMainApp(user: any) {
               </Route>
               <Route path="/admin/settings">
                 {() => <ProtectedRoute component={Settings} adminOnly />}
+              </Route>
+              <Route path="/admin/finance">
+                {() => <ProtectedRoute component={AdminFinance} adminOnly />}
+              </Route>
+              <Route path="/finance">
+                {() => <ProtectedRoute component={Finance} />}
               </Route>
               <Route path="/">
                 {() => user.role === "admin" ? <Redirect to="/admin/dashboard" /> : <Redirect to="/create-invoice" />}
