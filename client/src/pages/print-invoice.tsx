@@ -7,6 +7,7 @@ import React, { useEffect } from "react";
 interface InvoiceItem {
   itemName: string;
   hsnCode: string;
+  description?: string;
   quantity: number;
   rate: string;
   taxableValue: string;

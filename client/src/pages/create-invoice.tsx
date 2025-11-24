@@ -31,7 +31,7 @@ interface InvoiceItem {
   sgstAmount: number;
   total: number;
   originalRate: number;
-  originalMode: "Cash" | "Online";
+  originalMode: "Cash" | "Online" | "Cash+Card";
 }
 
 export default function CreateInvoice() {
@@ -127,6 +127,7 @@ export default function CreateInvoice() {
 
   const handleAddItem = (item: {
     productName: string;
+    productDescription?: string;
     quantity: number;
     rate: string;
     gstPercentage: string;

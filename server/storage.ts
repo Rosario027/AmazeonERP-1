@@ -5,6 +5,8 @@ import {
   invoiceItems,
   expenses,
   settings,
+  cashBalances,
+  cashWithdrawals,
   type User,
   type InsertUser,
   type Product,
@@ -18,6 +20,10 @@ import {
   type Setting,
   type InsertSetting,
   type InvoiceWithItems,
+  type CashBalance,
+  type InsertCashBalance,
+  type CashWithdrawal,
+  type InsertCashWithdrawal,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, desc, isNull } from "drizzle-orm";

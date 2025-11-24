@@ -140,16 +140,6 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   updatedAt: true,
 });
 
-export const insertCashBalanceSchema = createInsertSchema(cashBalances).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertCashWithdrawalSchema = createInsertSchema(cashWithdrawals).omit({
-  id: true,
-  createdAt: true,
-});
-
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -170,10 +160,10 @@ export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 
 export type CashBalance = typeof cashBalances.$inferSelect;
-export type InsertCashBalance = z.infer<typeof insertCashBalanceSchema>;
+export type InsertCashBalance = typeof cashBalances.$inferInsert;
 
 export type CashWithdrawal = typeof cashWithdrawals.$inferSelect;
-export type InsertCashWithdrawal = z.infer<typeof insertCashWithdrawalSchema>;
+export type InsertCashWithdrawal = typeof cashWithdrawals.$inferInsert;
 
 // Extended types for frontend
 export type InvoiceWithItems = Invoice & {
