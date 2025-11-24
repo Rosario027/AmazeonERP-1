@@ -9,6 +9,50 @@ import { z } from "zod";
 import { generateToken, authMiddleware, adminMiddleware } from "./auth";
 import ExcelJS from "exceljs";
 
+function normalizePaymentSplit(
+  paymentMode: string,
+  grandTotal: number,
+  cashAmount?: number,
+  cardAmount?: number,
+) {
+  let cash = Number.isFinite(cashAmount) ? Number(cashAmount) : 0;
+  let card = Number.isFinite(cardAmount) ? Number(cardAmount) : 0;
+
+  if (paymentMode === "Cash") {
+    cash = grandTotal;
+    card = 0;
+  } else if (paymentMode === "Online") {
+    cash = 0;
+    card = grandTotal;
+  } else if (paymentMode === "Cash+Card") {
+    const combined = cash + card;
+    if (combined === 0) {
+      cash = grandTotal;
+      card = 0;
+    } else {
+      const delta = grandTotal - combined;
+      if (Math.abs(delta) > 0.5) {
+        card = grandTotal - cash;
+      } else if (delta !== 0) {
+        card += delta;
+      }
+    }
+    if (cash < 0) cash = 0;
+    if (card < 0) card = 0;
+  } else {
+    if (cash === 0 && card === 0) {
+      cash = grandTotal;
+    }
+  }
+
+  const normalizedCash = Number(Math.max(cash, 0).toFixed(2));
+  const normalizedCard = Number(Math.max(card, 0).toFixed(2));
+  return {
+    cash: normalizedCash,
+    card: normalizedCard,
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication
   app.post("/api/auth/login", async (req, res) => {
@@ -215,6 +259,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const grandTotal = subtotal + totalGst;
       const roundedGrandTotal = Math.round(grandTotal);
 
+      const { cash: normalizedCashAmount, card: normalizedCardAmount } = normalizePaymentSplit(
+        paymentMode,
+        roundedGrandTotal,
+        Number(req.body.cashAmount ?? 0),
+        Number(req.body.cardAmount ?? 0),
+      );
+
       const invoice = await storage.createInvoice(
         {
           invoiceNumber,
@@ -228,6 +279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gstAmount: totalGst.toString(),
           // Store the rounded grand total (nearest rupee)
           grandTotal: roundedGrandTotal.toString(),
+          cashAmount: normalizedCashAmount.toFixed(2),
+          cardAmount: normalizedCardAmount.toFixed(2),
         },
         invoiceItems
       );
@@ -283,6 +336,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const grandTotal = subtotal + totalGst;
         const roundedGrandTotal = Math.round(grandTotal);
 
+        const { cash: normalizedCashAmount, card: normalizedCardAmount } = normalizePaymentSplit(
+          paymentMode || "Cash",
+          roundedGrandTotal,
+          Number(req.body.cashAmount ?? 0),
+          Number(req.body.cardAmount ?? 0),
+        );
+
         updateData = {
           customerName,
           customerPhone: customerPhone || null,
@@ -292,6 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gstAmount: totalGst.toString(),
           // Store the rounded grand total (nearest rupee)
           grandTotal: roundedGrandTotal.toString(),
+          cashAmount: normalizedCashAmount.toFixed(2),
+          cardAmount: normalizedCardAmount.toFixed(2),
         };
 
         const invoice = await storage.updateInvoice(id, updateData, invoiceItems);
@@ -798,6 +860,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const balances = await storage.getBalances({ userId: user.userId, startDate: startDate as string, endDate: endDate as string });
       res.json(balances);
     } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/finance/sales-summary", authMiddleware, async (req, res) => {
+    try {
+      const { date, startDate, endDate } = req.query;
+
+      let rangeStart: string | undefined;
+      let rangeEnd: string | undefined;
+
+      if (date) {
+        const day = new Date(date as string);
+        if (!Number.isNaN(day.getTime())) {
+          const start = new Date(day);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(day);
+          end.setHours(23, 59, 59, 999);
+          rangeStart = start.toISOString();
+          rangeEnd = end.toISOString();
+        }
+      } else {
+        if (startDate) {
+          const start = new Date(startDate as string);
+          if (!Number.isNaN(start.getTime())) {
+            start.setHours(0, 0, 0, 0);
+            rangeStart = start.toISOString();
+          }
+        }
+        if (endDate) {
+          const end = new Date(endDate as string);
+          if (!Number.isNaN(end.getTime())) {
+            end.setHours(23, 59, 59, 999);
+            rangeEnd = end.toISOString();
+          }
+        }
+      }
+
+      const summary = await storage.getInvoicePaymentSummary({ startDate: rangeStart, endDate: rangeEnd });
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching finance sales summary:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

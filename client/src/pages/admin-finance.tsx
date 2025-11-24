@@ -43,6 +43,13 @@ type UserSummary = {
   closing: number;
 };
 
+type SalesWindowSummary = {
+  cashTotal: number;
+  cardTotal: number;
+  totalSales: number;
+  invoiceCount: number;
+};
+
 function formatCurrency(value: number | string | undefined | null): string {
   if (value === undefined || value === null) return "0.00";
   const num = typeof value === "string" ? parseFloat(value || "0") : value;
@@ -63,6 +70,18 @@ export default function AdminFinance() {
       const res = await apiRequest(
         "GET",
         `/api/finance/admin/summary?startDate=${startDate}&endDate=${endDate}`,
+      );
+      return await res.json();
+    },
+    enabled: Boolean(startDate && endDate),
+  });
+
+  const invoiceSalesQuery = useQuery<SalesWindowSummary>({
+    queryKey: ["finance:admin-sales-summary", startDate, endDate],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        `/api/finance/sales-summary?startDate=${startDate}&endDate=${endDate}`,
       );
       return await res.json();
     },
@@ -97,6 +116,12 @@ export default function AdminFinance() {
     return Array.from(result.entries()).map(([userId, totals]) => ({ userId, totals }));
   }, [summaryQuery.data]);
 
+  const netCashAfterWithdrawals = useMemo(() => {
+    const cashSales = invoiceSalesQuery.data?.cashTotal ?? 0;
+    const withdrawals = summaryQuery.data?.totals?.withdrawalTotal ?? 0;
+    return cashSales - withdrawals;
+  }, [invoiceSalesQuery.data, summaryQuery.data]);
+
   const withdrawMutation = useMutation({
     mutationFn: async (payload: { amount: number; note?: string }) => {
       const res = await apiRequest("POST", "/api/finance/withdraw", payload);
@@ -104,6 +129,7 @@ export default function AdminFinance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:admin-sales-summary"] });
       toast({ title: "Withdrawal recorded", description: "Cash withdrawal has been saved." });
       setWithdrawAmount("");
       setWithdrawNote("");
@@ -183,6 +209,32 @@ export default function AdminFinance() {
               <div className="flex justify-between">
                 <span>Withdrawals</span>
                 <span className="font-semibold">₹{formatCurrency(summaryQuery.data?.totals?.withdrawalTotal)}</span>
+              </div>
+            </div>
+            <div className="pt-4 mt-4 border-t space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span>Invoice Cash Sales</span>
+                <span className="font-semibold">
+                  {invoiceSalesQuery.isLoading ? "…" : `₹${formatCurrency(invoiceSalesQuery.data?.cashTotal)}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Invoice Card Sales</span>
+                <span className="font-semibold">
+                  {invoiceSalesQuery.isLoading ? "…" : `₹${formatCurrency(invoiceSalesQuery.data?.cardTotal)}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Invoices Count</span>
+                <span className="font-semibold">
+                  {invoiceSalesQuery.isLoading ? "…" : invoiceSalesQuery.data?.invoiceCount ?? 0}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cash After Withdrawals</span>
+                <span className="font-semibold">
+                  {invoiceSalesQuery.isLoading ? "…" : `₹${formatCurrency(netCashAfterWithdrawals)}`}
+                </span>
               </div>
             </div>
           </CardContent>
