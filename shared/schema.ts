@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -87,7 +87,9 @@ export const cashBalances = pgTable("cash_balances", {
   cardTotal: decimal("card_total", { precision: 12, scale: 2 }).notNull(),
   closing: decimal("closing", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userDateIdx: uniqueIndex("cash_balances_user_date_idx").on(table.userId, table.date),
+}));
 
 export const cashWithdrawals = pgTable("cash_withdrawals", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
