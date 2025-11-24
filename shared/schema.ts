@@ -78,6 +78,25 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const cashBalances = pgTable("cash_balances", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  opening: decimal("opening", { precision: 12, scale: 2 }).notNull(),
+  cashTotal: decimal("cash_total", { precision: 12, scale: 2 }).notNull(),
+  cardTotal: decimal("card_total", { precision: 12, scale: 2 }).notNull(),
+  closing: decimal("closing", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const cashWithdrawals = pgTable("cash_withdrawals", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  adminId: varchar("admin_id").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const invoicesRelations = relations(invoices, ({ many }) => ({
   items: many(invoiceItems),
@@ -121,6 +140,16 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   updatedAt: true,
 });
 
+export const insertCashBalanceSchema = createInsertSchema(cashBalances).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCashWithdrawalSchema = createInsertSchema(cashWithdrawals).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -139,6 +168,12 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+export type CashBalance = typeof cashBalances.$inferSelect;
+export type InsertCashBalance = z.infer<typeof insertCashBalanceSchema>;
+
+export type CashWithdrawal = typeof cashWithdrawals.$inferSelect;
+export type InsertCashWithdrawal = z.infer<typeof insertCashWithdrawalSchema>;
 
 // Extended types for frontend
 export type InvoiceWithItems = Invoice & {

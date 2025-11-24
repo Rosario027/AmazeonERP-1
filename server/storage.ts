@@ -68,6 +68,12 @@ export interface IStorage {
     weekExpenses: number;
     monthExpenses: number;
   }>;
+  // Finance
+  getCashBalance(userId: string, date: string): Promise<CashBalance | undefined>;
+  upsertCashBalance(balance: InsertCashBalance): Promise<CashBalance>;
+  getBalances(filters?: { userId?: string; startDate?: string; endDate?: string }): Promise<CashBalance[]>;
+  createCashWithdrawal(withdrawal: InsertCashWithdrawal): Promise<CashWithdrawal>;
+  getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -413,6 +419,77 @@ export class DatabaseStorage implements IStorage {
       weekExpenses: parseFloat(weekExpensesResult?.total || "0"),
       monthExpenses: parseFloat(monthExpensesResult?.total || "0"),
     };
+  }
+
+  // Finance
+  async getCashBalance(userId: string, date: string): Promise<CashBalance | undefined> {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const [balance] = await db.select().from(cashBalances).where(and(eq(cashBalances.userId, userId), eq(cashBalances.date, dayStart)));
+    return balance || undefined;
+  }
+
+  async upsertCashBalance(balance: InsertCashBalance): Promise<CashBalance> {
+    // If an entry exists for the user and date, update it; otherwise insert
+    const dayStart = new Date(balance.date as unknown as string);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const existing = await db.select().from(cashBalances).where(and(eq(cashBalances.userId, balance.userId), eq(cashBalances.date, dayStart)));
+    if (existing && existing.length > 0) {
+      const [updated] = await db
+        .update(cashBalances)
+        .set({
+          opening: balance.opening,
+          cashTotal: balance.cashTotal,
+          cardTotal: balance.cardTotal,
+          closing: balance.closing,
+        })
+        .where(and(eq(cashBalances.userId, balance.userId), eq(cashBalances.date, dayStart)))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await db.insert(cashBalances).values({
+        userId: balance.userId,
+        date: dayStart,
+        opening: balance.opening,
+        cashTotal: balance.cashTotal,
+        cardTotal: balance.cardTotal,
+        closing: balance.closing,
+      }).returning();
+      return inserted;
+    }
+  }
+
+  async getBalances(filters?: { userId?: string; startDate?: string; endDate?: string }): Promise<CashBalance[]> {
+    let query = db.select().from(cashBalances);
+    const conditions: any[] = [];
+    if (filters?.userId) conditions.push(eq(cashBalances.userId, filters.userId));
+    if (filters?.startDate) conditions.push(gte(cashBalances.date, new Date(filters.startDate)));
+    if (filters?.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      conditions.push(lte(cashBalances.date, end));
+    }
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    return await query.orderBy(desc(cashBalances.date));
+  }
+
+  async createCashWithdrawal(withdrawal: InsertCashWithdrawal): Promise<CashWithdrawal> {
+    const [row] = await db.insert(cashWithdrawals).values(withdrawal).returning();
+    return row;
+  }
+
+  async getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]> {
+    let query = db.select().from(cashWithdrawals);
+    const conditions: any[] = [];
+    if (filters?.startDate) conditions.push(gte(cashWithdrawals.createdAt, new Date(filters.startDate)));
+    if (filters?.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      conditions.push(lte(cashWithdrawals.createdAt, end));
+    }
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    return await query.orderBy(desc(cashWithdrawals.createdAt));
   }
 }
 

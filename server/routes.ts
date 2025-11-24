@@ -741,6 +741,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finance endpoints
+  // Admin: record cash withdrawal
+  app.post("/api/finance/withdraw", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { amount, note } = req.body;
+      if (!amount) return res.status(400).json({ message: "Missing amount" });
+
+      const withdrawal = await storage.createCashWithdrawal({
+        adminId: user.userId,
+        amount: amount.toString(),
+        note: note || null,
+      } as any);
+
+      res.status(201).json(withdrawal);
+    } catch (error) {
+      console.error("Error creating withdrawal:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // User: submit closing cash for a day (upsert)
+  app.post("/api/finance/closing", authMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { date, opening, cashTotal, cardTotal, closing } = req.body;
+      if (opening === undefined || cashTotal === undefined || cardTotal === undefined || closing === undefined) {
+        return res.status(400).json({ message: "Missing required balance fields" });
+      }
+
+      const day = date ? new Date(date) : new Date();
+      day.setHours(0, 0, 0, 0);
+
+      const result = await storage.upsertCashBalance({
+        userId: user.userId,
+        date: day as any,
+        opening: opening.toString(),
+        cashTotal: cashTotal.toString(),
+        cardTotal: cardTotal.toString(),
+        closing: closing.toString(),
+      } as any);
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error upserting cash balance:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // User: fetch own balances (date range optional)
+  app.get("/api/finance/user/balances", authMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { startDate, endDate } = req.query;
+      const balances = await storage.getBalances({ userId: user.userId, startDate: startDate as string, endDate: endDate as string });
+      res.json(balances);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Admin: fetch balances across users and withdrawals summary
+  app.get("/api/finance/admin/summary", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const balances = await storage.getBalances({ startDate: startDate as string, endDate: endDate as string });
+      const withdrawals = await storage.getCashWithdrawals({ startDate: startDate as string, endDate: endDate as string });
+
+      // Aggregate totals
+      const totals = balances.reduce((acc: any, b: any) => {
+        acc.opening = (acc.opening || 0) + parseFloat(b.opening as any || 0);
+        acc.cashTotal = (acc.cashTotal || 0) + parseFloat(b.cashTotal as any || 0);
+        acc.cardTotal = (acc.cardTotal || 0) + parseFloat(b.cardTotal as any || 0);
+        acc.closing = (acc.closing || 0) + parseFloat(b.closing as any || 0);
+        return acc;
+      }, {});
+
+      const withdrawalTotal = withdrawals.reduce((s: number, w: any) => s + parseFloat(w.amount || 0), 0);
+
+      res.json({ balances, withdrawals, totals: { ...totals, withdrawalTotal } });
+    } catch (error) {
+      console.error("Error fetching admin finance summary:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get opening balance for a user for given date: returns previous day's closing if available
+  app.get("/api/finance/opening", authMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { date } = req.query;
+      const day = date ? new Date(date as string) : new Date();
+      // previous day
+      const prev = new Date(day);
+      prev.setDate(prev.getDate() - 1);
+      prev.setHours(0, 0, 0, 0);
+
+      const balances = await storage.getBalances({ userId: user.userId, startDate: prev.toISOString(), endDate: prev.toISOString() });
+      const opening = balances && balances.length > 0 ? parseFloat(balances[0].closing as any || 0) : 0;
+      res.json({ opening });
+    } catch (error) {
+      console.error("Error fetching opening balance:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
