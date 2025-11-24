@@ -413,6 +413,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finance APIs
+  // Admin: cash withdrawals
+  app.post("/api/finance/withdraw", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { amount, note, withdrawalDate } = req.body;
+      const user = (req as any).user;
+      if (!amount) return res.status(400).json({ message: "Missing amount" });
+
+      const withdrawal = await storage.createCashWithdrawal({
+        adminId: user.userId,
+        amount: parseFloat(amount).toString(),
+        note: note || null,
+        withdrawalDate: withdrawalDate ? new Date(withdrawalDate) : new Date(),
+      } as any);
+
+      res.status(201).json(withdrawal);
+    } catch (error) {
+      console.error("Error creating withdrawal:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // User: submit daily closing cash
+  app.post("/api/finance/closing", authMiddleware, async (req, res) => {
+    try {
+      const { balanceDate, closingCash } = req.body;
+      const user = (req as any).user;
+      if (!closingCash) return res.status(400).json({ message: "Missing closingCash" });
+
+      const dateStr = balanceDate || new Date().toISOString().slice(0, 10);
+
+      // Compute store-level cash/card sales for the date
+      const start = new Date(dateStr);
+      const end = new Date(dateStr);
+      end.setHours(23, 59, 59, 999);
+
+      const [cashSum] = await db.select({ total: sql<string>`COALESCE(SUM(${invoices.grandTotal}), '0')` })
+        .from(invoices)
+        .where(and(gte(invoices.createdAt, start), lte(invoices.createdAt, end), eq(invoices.paymentMode, 'Cash')));
+
+      const [cardSum] = await db.select({ total: sql<string>`COALESCE(SUM(${invoices.grandTotal}), '0')` })
+        .from(invoices)
+        .where(and(gte(invoices.createdAt, start), lte(invoices.createdAt, end), eq(invoices.paymentMode, 'Online')));
+
+      const cashSales = parseFloat(cashSum?.total || '0');
+      const cardSales = parseFloat(cardSum?.total || '0');
+
+      const balance = await storage.upsertCashBalance({
+        userId: user.userId,
+        balanceDate: dateStr,
+        closingCash: parseFloat(closingCash),
+        cashSales,
+        cardSales,
+      } as any);
+
+      res.status(200).json(balance);
+    } catch (error) {
+      console.error("Error saving closing cash:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // User: list balances (own) or admin can pass userId
+  app.get("/api/finance/user/balances", authMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate, userId } = req.query;
+      const user = (req as any).user;
+      const targetUser = user.role === 'admin' && userId ? String(userId) : user.userId;
+      const balances = await storage.getBalances({ userId: targetUser, startDate: startDate as string, endDate: endDate as string });
+      res.json(balances);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Admin: summary (aggregate cash/card and withdrawals)
+  app.get("/api/finance/admin/summary", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const balances = await storage.getBalances({ startDate: startDate as string, endDate: endDate as string });
+      const withdrawals = await storage.getCashWithdrawals({ startDate: startDate as string, endDate: endDate as string });
+
+      const totals = balances.reduce((acc, b) => {
+        acc.cashSales += parseFloat(String(b.cashSales || 0));
+        acc.cardSales += parseFloat(String(b.cardSales || 0));
+        acc.opening += parseFloat(String(b.openingCash || 0));
+        acc.closing += parseFloat(String(b.closingCash || 0));
+        return acc;
+      }, { cashSales: 0, cardSales: 0, opening: 0, closing: 0 });
+
+      const totalWithdrawals = withdrawals.reduce((s, w) => s + parseFloat(String(w.amount || 0)), 0);
+
+      res.json({ ...totals, totalWithdrawals });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get opening balance for a date (previous day's closing)
+  app.get("/api/finance/opening", authMiddleware, async (req, res) => {
+    try {
+      const { date, userId } = req.query;
+      const user = (req as any).user;
+      const targetUser = user.role === 'admin' && userId ? String(userId) : user.userId;
+      if (!date) return res.status(400).json({ message: 'Missing date' });
+      const d = new Date(String(date));
+      const prev = new Date(d.getTime() - 24 * 60 * 60 * 1000);
+      const prevStr = prev.toISOString().slice(0,10);
+      const prevBalance = await storage.getCashBalance(targetUser, prevStr);
+      res.json({ opening: prevBalance?.closingCash ?? 0 });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
   // Sales Report (admin only)
   app.get("/api/reports/sales", authMiddleware, adminMiddleware, async (req, res) => {
     try {

@@ -78,6 +78,29 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Finance: Cash Balances
+export const cashBalances = pgTable("cash_balances", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  balanceDate: timestamp("balance_date", { mode: "date" }).notNull(),
+  openingCash: decimal("opening_cash", { precision: 12, scale: 2 }).default("0"),
+  closingCash: decimal("closing_cash", { precision: 12, scale: 2 }).default("0"),
+  cashSales: decimal("cash_sales", { precision: 12, scale: 2 }).default("0"),
+  cardSales: decimal("card_sales", { precision: 12, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Finance: Cash Withdrawals
+export const cashWithdrawals = pgTable("cash_withdrawals", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  adminId: varchar("admin_id", { length: 64 }).notNull(),
+  withdrawalDate: timestamp("withdrawal_date", { mode: "date" }).notNull().defaultNow(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const invoicesRelations = relations(invoices, ({ many }) => ({
   items: many(invoiceItems),
@@ -139,6 +162,11 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+export type CashBalance = typeof cashBalances.$inferSelect;
+export type InsertCashBalance = typeof cashBalances.$inferInsert;
+export type CashWithdrawal = typeof cashWithdrawals.$inferSelect;
+export type InsertCashWithdrawal = typeof cashWithdrawals.$inferInsert;
 
 // Extended types for frontend
 export type InvoiceWithItems = Invoice & {
