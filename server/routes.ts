@@ -945,10 +945,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { startDate, endDate } = req.query;
-      const balances = await storage.getBalances({ userId: user.userId, startDate: startDate as string, endDate: endDate as string });
+      const balances = await storage.getBalances({ 
+        userId: user.userId, 
+        startDate: startDate as string, 
+        endDate: endDate as string 
+      });
       res.json(balances);
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      console.error("[Finance API] Error fetching user balances:", error);
+      res.status(500).json({ message: "Server error", error: String(error) });
     }
   });
 
@@ -958,21 +963,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { date, startDate, endDate } = req.query;
 
       if (!date && !startDate && !endDate) {
-        return res.status(400).json({ message: "Provide either 'date' or 'startDate'/'endDate'" });
+        return res.status(400).json({ 
+          message: "Provide either 'date' or 'startDate'/'endDate'",
+          cashTotal: 0,
+          cardTotal: 0,
+          totalSales: 0,
+          invoiceCount: 0
+        });
       }
 
       let rangeStart: string;
       let rangeEnd: string;
 
       if (date) {
-        // Single date query - get that day's sales
+        // Single date query - parse as local date
         const dateStr = date as string;
-        rangeStart = `${dateStr}T00:00:00.000Z`;
-        rangeEnd = `${dateStr}T23:59:59.999Z`;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+        rangeStart = start.toISOString();
+        rangeEnd = end.toISOString();
       } else {
-        // Date range query
-        rangeStart = startDate ? `${startDate}T00:00:00.000Z` : new Date(0).toISOString();
-        rangeEnd = endDate ? `${endDate}T23:59:59.999Z` : new Date().toISOString();
+        // Date range query - parse as local dates
+        if (startDate) {
+          const [year, month, day] = (startDate as string).split('-').map(Number);
+          const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+          rangeStart = start.toISOString();
+        } else {
+          rangeStart = new Date(0).toISOString();
+        }
+        
+        if (endDate) {
+          const [year, month, day] = (endDate as string).split('-').map(Number);
+          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+          rangeEnd = end.toISOString();
+        } else {
+          rangeEnd = new Date().toISOString();
+        }
       }
 
       const summary = await storage.getInvoicePaymentSummary({ 
@@ -1050,9 +1077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to check invoice payment data
+  // Debug endpoint to check invoice payment data and schema
   app.get("/api/debug/invoices", authMiddleware, async (req, res) => {
     try {
+      // Check if columns exist
+      const schemaCheck = await pool.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'invoices' 
+        AND column_name IN ('cash_amount', 'card_amount', 'payment_mode', 'grand_total')
+        ORDER BY column_name;
+      `);
+      
       const invoices = await storage.getInvoices({ limit: 10 });
       const summary = invoices.map((inv: any) => ({
         id: inv.id,
@@ -1063,14 +1099,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cardAmount: inv.cardAmount,
         createdAt: inv.createdAt,
       }));
+      
       res.json({ 
-        count: invoices.length,
+        schemaColumns: schemaCheck.rows,
+        invoiceCount: invoices.length,
         invoices: summary,
-        message: "Recent 10 invoices with payment data"
+        message: "Schema and recent invoices check"
       });
     } catch (error) {
       console.error("Error in debug endpoint:", error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Server error", error: String(error) });
     }
   });
 
