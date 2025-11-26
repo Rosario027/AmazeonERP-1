@@ -107,15 +107,26 @@ FROM information_schema.columns
 WHERE table_name = 'cash_withdrawals'
 ORDER BY ordinal_position;
 
--- Step 10: Check if there's any cash balance data
+-- Step 10: Check if there's any cash balance data (if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cash_balances') THEN
+    RAISE NOTICE 'Cash balances table exists, checking data...';
+  ELSE
+    RAISE NOTICE 'Cash balances table does not exist yet';
+  END IF;
+END $$;
+
+-- Only run if cash_balances table exists
 SELECT 
   DATE(date) as balance_date,
   COUNT(*) as entries,
-  SUM(opening) as total_opening,
-  SUM(cash_total) as total_cash,
-  SUM(card_total) as total_card,
-  SUM(closing) as total_closing
+  SUM(CAST(opening AS NUMERIC)) as total_opening,
+  SUM(CAST(cash_total AS NUMERIC)) as total_cash,
+  SUM(CAST(card_total AS NUMERIC)) as total_card,
+  SUM(CAST(closing AS NUMERIC)) as total_closing
 FROM cash_balances
+WHERE EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cash_balances')
 GROUP BY DATE(date)
 ORDER BY balance_date DESC
 LIMIT 10;
