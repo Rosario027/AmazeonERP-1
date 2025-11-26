@@ -83,6 +83,12 @@ export default function CreateInvoice() {
       setInvoiceNumberForEdit(existingInvoice.invoiceNumber || "");
       setStoredGstMode(existingInvoice.gstMode || "inclusive");
       
+      // Load payment split amounts if Cash+Card
+      if (existingInvoice.paymentMode === "Cash+Card") {
+        setCashAmount(parseFloat(existingInvoice.cashAmount) || 0);
+        setCardAmount(parseFloat(existingInvoice.cardAmount) || 0);
+      }
+      
       if (existingInvoice.items && existingInvoice.items.length > 0) {
         const formattedItems = existingInvoice.items.map((item: any) => ({
           productId: item.productId,
@@ -214,9 +220,12 @@ export default function CreateInvoice() {
     setItems(recalculated);
     setPaymentMode(newPaymentMode);
     if (newPaymentMode === "Cash+Card") {
-      setSplitModalOpen(true);
-      setCashAmount(0);
-      setCardAmount(roundedGrandTotal);
+      // Open modal after state updates to ensure roundedGrandTotal is current
+      setTimeout(() => {
+        setCashAmount(0);
+        setCardAmount(Math.round(recalculated.reduce((sum, item) => sum + item.total, 0)));
+        setSplitModalOpen(true);
+      }, 0);
     }
   };
 
@@ -602,6 +611,28 @@ export default function CreateInvoice() {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {paymentMode === "Cash+Card" && (
+                  <div className="p-3 bg-muted rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Cash Amount:</span>
+                      <span className="font-semibold">₹{cashAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Card/Online Amount:</span>
+                      <span className="font-semibold">₹{cardAmount.toFixed(2)}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setSplitModalOpen(true)}
+                    >
+                      Adjust Split
+                    </Button>
+                  </div>
+                )}
+                
                 <Button
                   className="w-full h-12"
                   onClick={handleSave}
