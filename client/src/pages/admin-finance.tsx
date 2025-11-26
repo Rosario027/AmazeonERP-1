@@ -294,6 +294,11 @@ export default function AdminFinance() {
 
   const isLoading = summaryQuery.isLoading || salesQuery.isLoading;
   const hasError = summaryQuery.isError || salesQuery.isError;
+  
+  // Log any errors for debugging
+  if (summaryQuery.isError) console.error("Summary query error:", summaryQuery.error);
+  if (salesQuery.isError) console.error("Sales query error:", salesQuery.error);
+  if (withdrawalsQuery.isError) console.error("Withdrawals query error:", withdrawalsQuery.error);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -487,7 +492,11 @@ export default function AdminFinance() {
               </div>
 
               {withdrawalsQuery.isLoading ? (
-                <div className="text-sm text-muted-foreground">Loading...</div>
+                <div className="text-sm text-muted-foreground">Loading withdrawals...</div>
+              ) : withdrawalsQuery.isError ? (
+                <div className="text-sm text-red-600 py-4 text-center border rounded-lg">
+                  Error loading withdrawals. Check console for details.
+                </div>
               ) : withdrawalsQuery.data && withdrawalsQuery.data.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/20">
                   {withdrawalsQuery.data.map((withdrawal) => (
