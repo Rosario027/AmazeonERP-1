@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, TrendingDown } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type BalanceRow = {
@@ -26,6 +26,14 @@ type SalesSummary = {
   cardTotal: number;
   totalSales: number;
   invoiceCount: number;
+};
+
+type Withdrawal = {
+  id: number;
+  adminId: string;
+  amount: string;
+  note: string | null;
+  createdAt: string;
 };
 
 function formatCurrency(value: number | string | null | undefined): string {
@@ -56,6 +64,10 @@ export default function Finance() {
     card: false,
     closing: false,
   });
+
+  // Withdrawal form state
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
+  const [withdrawNote, setWithdrawNote] = useState<string>("");
 
   // Calculate date range for last 7 days
   const rangeStart = useMemo(() => {
@@ -95,6 +107,18 @@ export default function Finance() {
     queryKey: ["finance:sales-summary", selectedDate],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/finance/sales-summary?date=${selectedDate}`);
+      return await res.json();
+    },
+  });
+
+  // Fetch user's withdrawals for selected date
+  const withdrawalsQuery = useQuery<Withdrawal[]>({
+    queryKey: ["finance:user-withdrawals", selectedDate],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        `/api/finance/withdrawals?startDate=${selectedDate}&endDate=${selectedDate}`,
+      );
       return await res.json();
     },
   });
@@ -182,6 +206,31 @@ export default function Finance() {
     },
   });
 
+  // Withdrawal mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async (payload: { amount: number; note?: string }) => {
+      const res = await apiRequest("POST", "/api/finance/withdraw", payload);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance:user-withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
+      toast({
+        title: "Withdrawal Recorded",
+        description: `₹${withdrawAmount} has been logged successfully.`,
+      });
+      setWithdrawAmount("");
+      setWithdrawNote("");
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to Record Withdrawal",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    },
+  });
+
   const handleSave = () => {
     const payload = {
       date: selectedDate,
@@ -201,6 +250,24 @@ export default function Finance() {
     }
 
     saveMutation.mutate(payload);
+  };
+
+  const handleWithdraw = () => {
+    const amount = parseFloat(withdrawAmount || "0");
+
+    if (!amount || amount <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount",
+      });
+      return;
+    }
+
+    withdrawMutation.mutate({
+      amount,
+      note: withdrawNote.trim() || undefined,
+    });
   };
 
   const isLoading = openingQuery.isLoading || balancesQuery.isLoading;
@@ -430,6 +497,90 @@ export default function Finance() {
           ) : (
             <div className="py-10 text-center text-muted-foreground">
               No balance entries yet. Submit today's closing to start tracking.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Cash Withdrawals Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cash Withdrawals</CardTitle>
+          <CardDescription>Record cash removed from register for banking, expenses, or other purposes</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="user-withdraw-amount">Amount (₹)</Label>
+              <Input
+                id="user-withdraw-amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="user-withdraw-note">Note (Optional)</Label>
+              <Input
+                id="user-withdraw-note"
+                placeholder="e.g., Bank deposit, Petty cash, Personal use"
+                value={withdrawNote}
+                onChange={(e) => setWithdrawNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button
+            onClick={handleWithdraw}
+            disabled={withdrawMutation.isPending || !withdrawAmount}
+          >
+            {withdrawMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Recording...
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Record Withdrawal
+              </>
+            )}
+          </Button>
+
+          {/* Today's Withdrawals */}
+          {withdrawalsQuery.data && withdrawalsQuery.data.length > 0 && (
+            <div className="pt-4 space-y-2 border-t">
+              <h3 className="text-sm font-medium">Today's Withdrawals</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {withdrawalsQuery.data.map((withdrawal) => (
+                  <div key={withdrawal.id} className="p-3 border rounded-md bg-muted/20">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="text-lg font-semibold text-red-600">
+                          -₹{formatCurrency(withdrawal.amount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(withdrawal.createdAt), "dd MMM yyyy, HH:mm")}
+                        </div>
+                        {withdrawal.note && (
+                          <div className="text-sm">{withdrawal.note}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Total Withdrawn Today:</span>
+                  <span className="text-red-600">
+                    -₹{formatCurrency(
+                      withdrawalsQuery.data.reduce((sum, w) => sum + parseFloat(w.amount || "0"), 0)
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

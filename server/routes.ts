@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Finance endpoints
   // Admin: record cash withdrawal
-  app.post("/api/finance/withdraw", authMiddleware, adminMiddleware, async (req, res) => {
+  app.post("/api/finance/withdraw", authMiddleware, async (req, res) => {
     try {
       const user = (req as any).user;
       const { amount, note } = req.body;
@@ -1043,7 +1043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin: fetch balances across users and withdrawals summary
   // Get withdrawals with date filter
-  app.get("/api/finance/withdrawals", authMiddleware, adminMiddleware, async (req, res) => {
+  app.get("/api/finance/withdrawals", authMiddleware, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const withdrawals = await storage.getCashWithdrawals({ 
