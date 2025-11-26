@@ -972,34 +972,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Pass date strings directly - storage layer uses SQL DATE() for comparison
       let rangeStart: string;
       let rangeEnd: string;
 
       if (date) {
-        // Single date query - parse as local date
-        const dateStr = date as string;
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
-        rangeStart = start.toISOString();
-        rangeEnd = end.toISOString();
+        rangeStart = date as string;
+        rangeEnd = date as string;
       } else {
-        // Date range query - parse as local dates
-        if (startDate) {
-          const [year, month, day] = (startDate as string).split('-').map(Number);
-          const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-          rangeStart = start.toISOString();
-        } else {
-          rangeStart = new Date(0).toISOString();
-        }
-        
-        if (endDate) {
-          const [year, month, day] = (endDate as string).split('-').map(Number);
-          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
-          rangeEnd = end.toISOString();
-        } else {
-          rangeEnd = new Date().toISOString();
-        }
+        rangeStart = (startDate as string) || '1970-01-01';
+        rangeEnd = (endDate as string) || new Date().toISOString().split('T')[0];
       }
 
       const summary = await storage.getInvoicePaymentSummary({ 
@@ -1053,19 +1035,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const currentDate = date ? date as string : new Date().toISOString().split('T')[0];
       
-      // Calculate previous day
-      const current = new Date(currentDate);
-      const prevDate = new Date(current);
-      prevDate.setDate(prevDate.getDate() - 1);
-      const previousDayStr = prevDate.toISOString().split('T')[0];
-      
-      const prevStart = `${previousDayStr}T00:00:00.000Z`;
-      const prevEnd = `${previousDayStr}T23:59:59.999Z`;
+      // Calculate previous day (simple string math for YYYY-MM-DD)
+      const [year, month, day] = currentDate.split('-').map(Number);
+      const current = new Date(year, month - 1, day);
+      current.setDate(current.getDate() - 1);
+      const previousDayStr = current.toISOString().split('T')[0];
 
       const balances = await storage.getBalances({ 
         userId: user.userId, 
-        startDate: prevStart, 
-        endDate: prevEnd 
+        startDate: previousDayStr, 
+        endDate: previousDayStr 
       });
       
       const opening = balances.length > 0 ? parseFloat(String(balances[0].closing || 0)) : 0;

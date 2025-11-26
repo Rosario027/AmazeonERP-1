@@ -180,13 +180,12 @@ export class DatabaseStorage implements IStorage {
       conditions.push(isNull(invoices.deletedAt));
     }
     
+    // Use DATE() function in SQL to compare dates in database timezone
     if (filters?.startDate) {
-      conditions.push(gte(invoices.createdAt, new Date(filters.startDate)));
+      conditions.push(sql`DATE(${invoices.createdAt}) >= ${filters.startDate}`);
     }
     if (filters?.endDate) {
-      const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      conditions.push(lte(invoices.createdAt, endDate));
+      conditions.push(sql`DATE(${invoices.createdAt}) <= ${filters.endDate}`);
     }
 
     if (conditions.length > 0) {
@@ -321,17 +320,13 @@ export class DatabaseStorage implements IStorage {
     try {
       const conditions: any[] = [isNull(invoices.deletedAt)];
       
-      // Parse dates correctly to avoid timezone issues
+      // Use DATE() function in SQL to compare dates in database timezone
       if (filters?.startDate) {
-        const start = parseLocalDate(filters.startDate);
-        start.setHours(0, 0, 0, 0);
-        conditions.push(gte(invoices.createdAt, start));
+        conditions.push(sql`DATE(${invoices.createdAt}) >= ${filters.startDate}`);
       }
       
       if (filters?.endDate) {
-        const end = parseLocalDate(filters.endDate);
-        end.setHours(23, 59, 59, 999);
-        conditions.push(lte(invoices.createdAt, end));
+        conditions.push(sql`DATE(${invoices.createdAt}) <= ${filters.endDate}`);
       }
 
       let query = db
@@ -545,14 +540,10 @@ export class DatabaseStorage implements IStorage {
     const conditions: any[] = [];
     if (filters?.userId) conditions.push(eq(cashBalances.userId, filters.userId));
     if (filters?.startDate) {
-      const start = parseLocalDate(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      conditions.push(gte(cashBalances.date, start));
+      conditions.push(sql`DATE(${cashBalances.date}) >= ${filters.startDate}`);
     }
     if (filters?.endDate) {
-      const end = parseLocalDate(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      conditions.push(lte(cashBalances.date, end));
+      conditions.push(sql`DATE(${cashBalances.date}) <= ${filters.endDate}`);
     }
     if (conditions.length > 0) query = query.where(and(...conditions)) as any;
     return await query.orderBy(desc(cashBalances.date));
@@ -567,14 +558,10 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(cashWithdrawals);
     const conditions: any[] = [];
     if (filters?.startDate) {
-      const start = parseLocalDate(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      conditions.push(gte(cashWithdrawals.createdAt, start));
+      conditions.push(sql`DATE(${cashWithdrawals.createdAt}) >= ${filters.startDate}`);
     }
     if (filters?.endDate) {
-      const end = parseLocalDate(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      conditions.push(lte(cashWithdrawals.createdAt, end));
+      conditions.push(sql`DATE(${cashWithdrawals.createdAt}) <= ${filters.endDate}`);
     }
     if (conditions.length > 0) query = query.where(and(...conditions)) as any;
     return await query.orderBy(desc(cashWithdrawals.createdAt));
