@@ -45,7 +45,11 @@ export default function AdminStaff() {
       if (!res.ok) throw new Error("Failed to create employee");
       return res.json();
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["employees"] }),
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      if (data?.id) setSelectedEmployeeId(data.id);
+      toast({ title: "Employee added" });
+    },
   });
 
   const updateMutation = useMutation({
