@@ -53,12 +53,6 @@ export interface IStorage {
   updateInvoice(id: number, invoice: Partial<InsertInvoice>, items?: InsertInvoiceItem[]): Promise<Invoice | undefined>;
   softDeleteInvoice(id: number): Promise<Invoice | undefined>;
   getNextInvoiceNumber(): Promise<string>;
-  getInvoicePaymentSummary(filters?: { startDate?: string; endDate?: string }): Promise<{
-    cashTotal: number;
-    cardTotal: number;
-    totalSales: number;
-    invoiceCount: number;
-  }>;
   
   // Settings
   getSettings(): Promise<Setting[]>;
@@ -298,44 +292,6 @@ export class DatabaseStorage implements IStorage {
     const nextNum = seriesStart + count;
     
     return `${fyPrefix}${nextNum.toString().padStart(3, '0')}`;
-  }
-
-  async getInvoicePaymentSummary(filters?: { startDate?: string; endDate?: string }): Promise<{
-    cashTotal: number;
-    cardTotal: number;
-    totalSales: number;
-    invoiceCount: number;
-  }> {
-    let query = db
-      .select({
-        cashTotal: sql<string>`COALESCE(SUM(${invoices.cashAmount}), 0)`,
-        cardTotal: sql<string>`COALESCE(SUM(${invoices.cardAmount}), 0)`,
-        invoiceCount: sql<number>`COUNT(*)`,
-      })
-      .from(invoices);
-
-    const conditions: any[] = [isNull(invoices.deletedAt)];
-    if (filters?.startDate) conditions.push(gte(invoices.createdAt, new Date(filters.startDate)));
-    if (filters?.endDate) {
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      conditions.push(lte(invoices.createdAt, end));
-    }
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
-
-    const [row] = await query;
-    const cashTotal = parseFloat(row?.cashTotal || "0");
-    const cardTotal = parseFloat(row?.cardTotal || "0");
-    const invoiceCount = Number(row?.invoiceCount || 0);
-    return {
-      cashTotal,
-      cardTotal,
-      totalSales: cashTotal + cardTotal,
-      invoiceCount,
-    };
   }
 
   async getSettings(): Promise<Setting[]> {

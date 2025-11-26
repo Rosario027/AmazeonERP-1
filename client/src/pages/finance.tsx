@@ -24,13 +24,6 @@ type OpeningResponse = {
   opening: number;
 };
 
-type SalesSummary = {
-  cashTotal: number;
-  cardTotal: number;
-  totalSales: number;
-  invoiceCount: number;
-};
-
 function toISODate(date: Date): string {
   return format(date, "yyyy-MM-dd");
 }
@@ -49,17 +42,8 @@ export default function Finance() {
   const [cashTotal, setCashTotal] = useState<string>("0");
   const [cardTotal, setCardTotal] = useState<string>("0");
   const [closing, setClosing] = useState<string>("0");
-  const [cashTouched, setCashTouched] = useState<boolean>(false);
-  const [cardTouched, setCardTouched] = useState<boolean>(false);
-  const [closingTouched, setClosingTouched] = useState<boolean>(false);
 
   const rangeStart = useMemo(() => toISODate(addDays(new Date(selectedDate), -6)), [selectedDate]);
-
-  useEffect(() => {
-    setCashTouched(false);
-    setCardTouched(false);
-    setClosingTouched(false);
-  }, [selectedDate]);
 
   const openingQuery = useQuery<OpeningResponse>({
     queryKey: ["finance:opening", selectedDate],
@@ -80,14 +64,6 @@ export default function Finance() {
     },
   });
 
-  const salesSummaryQuery = useQuery<SalesSummary>({
-    queryKey: ["finance:sales-summary", selectedDate],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/finance/sales-summary?date=${selectedDate}`);
-      return await res.json();
-    },
-  });
-
   const todaysBalance = useMemo(() => {
     if (!balancesQuery.data) return undefined;
     return balancesQuery.data.find((row) => toISODate(new Date(row.date)) === selectedDate);
@@ -104,9 +80,6 @@ export default function Finance() {
       setCashTotal(formatCurrency(todaysBalance.cashTotal));
       setCardTotal(formatCurrency(todaysBalance.cardTotal));
       setClosing(formatCurrency(todaysBalance.closing));
-      setCashTouched(true);
-      setCardTouched(true);
-      setClosingTouched(true);
     } else {
       setCashTotal("0");
       setCardTotal("0");
@@ -114,29 +87,12 @@ export default function Finance() {
     }
   }, [todaysBalance]);
 
-  useEffect(() => {
-    if (!todaysBalance && salesSummaryQuery.data) {
-      if (!cashTouched) {
-        setCashTotal(formatCurrency(salesSummaryQuery.data.cashTotal));
-      }
-      if (!cardTouched) {
-        setCardTotal(formatCurrency(salesSummaryQuery.data.cardTotal));
-      }
-    }
-  }, [salesSummaryQuery.data, todaysBalance, cashTouched, cardTouched]);
-
   const expectedClosing = useMemo(() => {
     const op = Number(opening || 0);
     const cash = Number(cashTotal || 0);
     const card = Number(cardTotal || 0);
     return op + cash + card;
   }, [opening, cashTotal, cardTotal]);
-
-  useEffect(() => {
-    if (!todaysBalance && !closingTouched) {
-      setClosing(expectedClosing.toFixed(2));
-    }
-  }, [expectedClosing, todaysBalance, closingTouched]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
@@ -224,10 +180,7 @@ export default function Finance() {
                   type="number"
                   inputMode="decimal"
                   value={cashTotal}
-                  onChange={(event) => {
-                    setCashTouched(true);
-                    setCashTotal(event.target.value);
-                  }}
+                  onChange={(event) => setCashTotal(event.target.value)}
                   data-testid="finance-input-cash"
                 />
               </div>
@@ -239,10 +192,7 @@ export default function Finance() {
                   type="number"
                   inputMode="decimal"
                   value={cardTotal}
-                  onChange={(event) => {
-                    setCardTouched(true);
-                    setCardTotal(event.target.value);
-                  }}
+                  onChange={(event) => setCardTotal(event.target.value)}
                   data-testid="finance-input-card"
                 />
               </div>
@@ -254,10 +204,7 @@ export default function Finance() {
                   type="number"
                   inputMode="decimal"
                   value={closing}
-                  onChange={(event) => {
-                    setClosingTouched(true);
-                    setClosing(event.target.value);
-                  }}
+                  onChange={(event) => setClosing(event.target.value)}
                   data-testid="finance-input-closing"
                 />
               </div>
@@ -293,22 +240,6 @@ export default function Finance() {
             <CardDescription>Key figures for the selected day.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span>Detected Cash Sales</span>
-              <span className="font-semibold">
-                {salesSummaryQuery.isLoading ? "…" : `₹${formatCurrency(salesSummaryQuery.data?.cashTotal)}`}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Detected Card Sales</span>
-              <span className="font-semibold">
-                {salesSummaryQuery.isLoading ? "…" : `₹${formatCurrency(salesSummaryQuery.data?.cardTotal)}`}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Invoices Count</span>
-              <span className="font-semibold">{salesSummaryQuery.data?.invoiceCount ?? 0}</span>
-            </div>
             <div className="flex justify-between">
               <span>Expected Closing</span>
               <span className="font-semibold">₹{expectedClosing.toFixed(2)}</span>
