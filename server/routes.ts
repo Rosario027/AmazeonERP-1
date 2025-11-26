@@ -914,8 +914,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required balance fields" });
       }
 
-      const day = date ? new Date(date) : new Date();
-      day.setHours(0, 0, 0, 0);
+      // Parse date correctly to avoid timezone issues
+      let day: Date;
+      if (date) {
+        const [year, month, dayNum] = date.split('-').map(Number);
+        day = new Date(year, month - 1, dayNum, 0, 0, 0, 0);
+      } else {
+        day = new Date();
+        day.setHours(0, 0, 0, 0);
+      }
 
       const result = await storage.upsertCashBalance({
         userId: user.userId,
@@ -953,27 +960,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let rangeEnd: string | undefined;
 
       if (date) {
-        const day = new Date(date as string);
-        if (!Number.isNaN(day.getTime())) {
-          const start = new Date(day);
-          start.setHours(0, 0, 0, 0);
-          const end = new Date(day);
-          end.setHours(23, 59, 59, 999);
+        // Parse as local date to avoid timezone issues
+        const dateStr = date as string;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+        
+        if (!Number.isNaN(start.getTime())) {
           rangeStart = start.toISOString();
           rangeEnd = end.toISOString();
         }
       } else {
         if (startDate) {
-          const start = new Date(startDate as string);
+          const dateStr = startDate as string;
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+          
           if (!Number.isNaN(start.getTime())) {
-            start.setHours(0, 0, 0, 0);
             rangeStart = start.toISOString();
           }
         }
         if (endDate) {
-          const end = new Date(endDate as string);
+          const dateStr = endDate as string;
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+          
           if (!Number.isNaN(end.getTime())) {
-            end.setHours(23, 59, 59, 999);
             rangeEnd = end.toISOString();
           }
         }
@@ -1017,13 +1029,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req as any).user;
       const { date } = req.query;
-      const day = date ? new Date(date as string) : new Date();
-      // previous day
+      
+      // Parse date correctly to avoid timezone issues
+      let day: Date;
+      if (date) {
+        const dateStr = date as string;
+        const [year, month, dayNum] = dateStr.split('-').map(Number);
+        day = new Date(year, month - 1, dayNum);
+      } else {
+        day = new Date();
+      }
+      
+      // Get previous day
       const prev = new Date(day);
       prev.setDate(prev.getDate() - 1);
       prev.setHours(0, 0, 0, 0);
+      const prevEnd = new Date(prev);
+      prevEnd.setHours(23, 59, 59, 999);
 
-      const balances = await storage.getBalances({ userId: user.userId, startDate: prev.toISOString(), endDate: prev.toISOString() });
+      const balances = await storage.getBalances({ 
+        userId: user.userId, 
+        startDate: prev.toISOString(), 
+        endDate: prevEnd.toISOString() 
+      });
       const opening = balances && balances.length > 0 ? parseFloat(balances[0].closing as any || 0) : 0;
       res.json({ opening });
     } catch (error) {

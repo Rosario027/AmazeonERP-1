@@ -1,3 +1,9 @@
+// Helper function to parse date string (YYYY-MM-DD) as local date to avoid timezone issues
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 import {
   users,
   products,
@@ -315,9 +321,13 @@ export class DatabaseStorage implements IStorage {
       .from(invoices);
 
     const conditions: any[] = [isNull(invoices.deletedAt)];
-    if (filters?.startDate) conditions.push(gte(invoices.createdAt, new Date(filters.startDate)));
+    if (filters?.startDate) {
+      const start = parseLocalDate(filters.startDate);
+      start.setHours(0, 0, 0, 0);
+      conditions.push(gte(invoices.createdAt, start));
+    }
     if (filters?.endDate) {
-      const end = new Date(filters.endDate);
+      const end = parseLocalDate(filters.endDate);
       end.setHours(23, 59, 59, 999);
       conditions.push(lte(invoices.createdAt, end));
     }
@@ -514,9 +524,13 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(cashBalances);
     const conditions: any[] = [];
     if (filters?.userId) conditions.push(eq(cashBalances.userId, filters.userId));
-    if (filters?.startDate) conditions.push(gte(cashBalances.date, new Date(filters.startDate)));
+    if (filters?.startDate) {
+      const start = parseLocalDate(filters.startDate);
+      start.setHours(0, 0, 0, 0);
+      conditions.push(gte(cashBalances.date, start));
+    }
     if (filters?.endDate) {
-      const end = new Date(filters.endDate);
+      const end = parseLocalDate(filters.endDate);
       end.setHours(23, 59, 59, 999);
       conditions.push(lte(cashBalances.date, end));
     }
@@ -532,9 +546,13 @@ export class DatabaseStorage implements IStorage {
   async getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]> {
     let query = db.select().from(cashWithdrawals);
     const conditions: any[] = [];
-    if (filters?.startDate) conditions.push(gte(cashWithdrawals.createdAt, new Date(filters.startDate)));
+    if (filters?.startDate) {
+      const start = parseLocalDate(filters.startDate);
+      start.setHours(0, 0, 0, 0);
+      conditions.push(gte(cashWithdrawals.createdAt, start));
+    }
     if (filters?.endDate) {
-      const end = new Date(filters.endDate);
+      const end = parseLocalDate(filters.endDate);
       end.setHours(23, 59, 59, 999);
       conditions.push(lte(cashWithdrawals.createdAt, end));
     }
