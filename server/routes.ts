@@ -1186,6 +1186,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Staff Management
+  // Employees CRUD (admin only for write; list allowed for authenticated)
+  app.get("/api/staff/employees", authMiddleware, async (req, res) => {
+    try {
+      const rows = await storage.listEmployees();
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/staff/employees", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { employeeCode, fullName, phone, email, role, status, dateJoined, dateLeft, salary } = req.body;
+      if (!employeeCode || !fullName) return res.status(400).json({ message: "Missing required fields" });
+      const row = await storage.createEmployee({
+        employeeCode,
+        fullName,
+        phone: phone || null,
+        email: email || null,
+        role: role || "staff",
+        status: status || "active",
+        dateJoined: dateJoined || null,
+        dateLeft: dateLeft || null,
+        salary: salary || null,
+      } as any);
+      res.status(201).json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/staff/employees/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const row = await storage.updateEmployee(id, req.body);
+      if (!row) return res.status(404).json({ message: "Employee not found" });
+      res.json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.delete("/api/staff/employees/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const ok = await storage.deleteEmployee(id);
+      if (!ok) return res.status(404).json({ message: "Employee not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Attendance: upsert by admin; listing by authenticated
+  app.get("/api/staff/attendance/:employeeId", authMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const { startDate, endDate } = req.query;
+      const rows = await storage.listAttendance(employeeId, startDate as string, endDate as string);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/staff/attendance", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { employeeId, attendanceDate, status, checkIn, checkOut, notes } = req.body;
+      if (!employeeId || !attendanceDate || !status) return res.status(400).json({ message: "Missing required fields" });
+      const row = await storage.upsertAttendance({
+        employeeId,
+        attendanceDate,
+        status,
+        checkIn: checkIn || null,
+        checkOut: checkOut || null,
+        notes: notes || null,
+        createdBy: (req as any).user?.userId || null,
+      } as any);
+      res.status(201).json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.delete("/api/staff/attendance/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const ok = await storage.deleteAttendance(id);
+      if (!ok) return res.status(404).json({ message: "Attendance not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Employee purchases: record/list (admin write; authenticated list)
+  app.get("/api/staff/purchases/:employeeId", authMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const { startDate, endDate } = req.query;
+      const rows = await storage.listEmployeePurchases(employeeId, startDate as string, endDate as string);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/staff/purchases", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { employeeId, purchaseDate, category, amount, paymentMode, description } = req.body;
+      if (!employeeId || !purchaseDate || !category || amount === undefined) return res.status(400).json({ message: "Missing required fields" });
+      const row = await storage.createEmployeePurchase({
+        employeeId,
+        purchaseDate,
+        category,
+        amount,
+        paymentMode: paymentMode || "cash",
+        description: description || null,
+        recordedBy: (req as any).user?.userId || null,
+      } as any);
+      res.status(201).json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/staff/purchases/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const row = await storage.updateEmployeePurchase(id, req.body);
+      if (!row) return res.status(404).json({ message: "Purchase not found" });
+      res.json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.delete("/api/staff/purchases/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const ok = await storage.deleteEmployeePurchase(id);
+      if (!ok) return res.status(404).json({ message: "Purchase not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

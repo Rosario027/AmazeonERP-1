@@ -44,6 +44,57 @@ export const invoices = pgTable("invoices", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Staff Management
+export const employees = pgTable("employees", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  employeeCode: text("employee_code").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  role: text("role").notNull().default("staff"),
+  status: text("status").notNull().default("active"),
+  dateJoined: date("date_joined"),
+  dateLeft: date("date_left"),
+  salary: numeric("salary", { precision: 12, scale: 2 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const employeeAttendance = pgTable("employee_attendance", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  employeeId: uuid("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  attendanceDate: date("attendance_date").notNull(),
+  status: text("status").notNull(),
+  checkIn: timestamp("check_in", { withTimezone: true }),
+  checkOut: timestamp("check_out", { withTimezone: true }),
+  notes: text("notes"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqEmployeeDate: uniqueIndex("uniq_attendance_employee_date").on(table.employeeId, table.attendanceDate),
+}));
+
+export const employeePurchases = pgTable("employee_purchases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  employeeId: uuid("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  purchaseDate: date("purchase_date").notNull(),
+  category: text("category").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  paymentMode: text("payment_mode").notNull().default("cash"),
+  description: text("description"),
+  recordedBy: uuid("recorded_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type NewEmployee = typeof employees.$inferInsert;
+export type EmployeeAttendance = typeof employeeAttendance.$inferSelect;
+export type NewEmployeeAttendance = typeof employeeAttendance.$inferInsert;
+export type EmployeePurchase = typeof employeePurchases.$inferSelect;
+export type NewEmployeePurchase = typeof employeePurchases.$inferInsert;
+
 export const invoiceItems = pgTable("invoice_items", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   invoiceId: integer("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),

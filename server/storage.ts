@@ -30,6 +30,15 @@ import {
   type InsertCashBalance,
   type CashWithdrawal,
   type InsertCashWithdrawal,
+  employees,
+  employeeAttendance,
+  employeePurchases,
+  type Employee,
+  type NewEmployee,
+  type EmployeeAttendance,
+  type NewEmployeeAttendance,
+  type EmployeePurchase,
+  type NewEmployeePurchase,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, desc, isNull } from "drizzle-orm";
@@ -600,6 +609,80 @@ export class DatabaseStorage implements IStorage {
     
     query = query.where(and(...conditions)) as any;
     return await query.orderBy(desc(cashWithdrawals.createdAt));
+  }
+
+  // Staff: Employees
+  async listEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees).orderBy(desc(employees.createdAt));
+  }
+
+  async createEmployee(payload: NewEmployee): Promise<Employee> {
+    const [row] = await db.insert(employees).values(payload).returning();
+    return row;
+  }
+
+  async updateEmployee(id: string, payload: Partial<NewEmployee>): Promise<Employee | undefined> {
+    const [row] = await db.update(employees).set(payload).where(eq(employees.id, id)).returning();
+    return row || undefined;
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const result = await db.delete(employees).where(eq(employees.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Staff: Attendance
+  async listAttendance(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeeAttendance[]> {
+    const conditions: any[] = [eq(employeeAttendance.employeeId, employeeId)];
+    if (fromDate) conditions.push(sql`DATE(${employeeAttendance.attendanceDate}) >= ${fromDate}`);
+    if (toDate) conditions.push(sql`DATE(${employeeAttendance.attendanceDate}) <= ${toDate}`);
+    return await db.select().from(employeeAttendance).where(and(...conditions)).orderBy(desc(employeeAttendance.attendanceDate));
+  }
+
+  async upsertAttendance(payload: NewEmployeeAttendance): Promise<EmployeeAttendance> {
+    const [row] = await db
+      .insert(employeeAttendance)
+      .values(payload)
+      .onConflictDoUpdate({
+        target: [employeeAttendance.employeeId, employeeAttendance.attendanceDate],
+        set: {
+          status: payload.status,
+          checkIn: payload.checkIn ?? null,
+          checkOut: payload.checkOut ?? null,
+          notes: payload.notes ?? null,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteAttendance(id: string): Promise<boolean> {
+    const result = await db.delete(employeeAttendance).where(eq(employeeAttendance.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Staff: Purchases
+  async listEmployeePurchases(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeePurchase[]> {
+    const conditions: any[] = [eq(employeePurchases.employeeId, employeeId)];
+    if (fromDate) conditions.push(sql`DATE(${employeePurchases.purchaseDate}) >= ${fromDate}`);
+    if (toDate) conditions.push(sql`DATE(${employeePurchases.purchaseDate}) <= ${toDate}`);
+    return await db.select().from(employeePurchases).where(and(...conditions)).orderBy(desc(employeePurchases.purchaseDate));
+  }
+
+  async createEmployeePurchase(payload: NewEmployeePurchase): Promise<EmployeePurchase> {
+    const [row] = await db.insert(employeePurchases).values(payload).returning();
+    return row;
+  }
+
+  async updateEmployeePurchase(id: string, payload: Partial<NewEmployeePurchase>): Promise<EmployeePurchase | undefined> {
+    const [row] = await db.update(employeePurchases).set(payload).where(eq(employeePurchases.id, id)).returning();
+    return row || undefined;
+  }
+
+  async deleteEmployeePurchase(id: string): Promise<boolean> {
+    const result = await db.delete(employeePurchases).where(eq(employeePurchases.id, id)).returning();
+    return result.length > 0;
   }
 }
 
