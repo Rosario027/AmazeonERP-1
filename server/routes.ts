@@ -970,6 +970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rangeStart = start.toISOString();
           rangeEnd = end.toISOString();
         }
+        console.log(`[Finance] Query for date: ${dateStr}, range: ${rangeStart} to ${rangeEnd}`);
       } else {
         if (startDate) {
           const dateStr = startDate as string;
@@ -989,9 +990,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rangeEnd = end.toISOString();
           }
         }
+        console.log(`[Finance] Query for range: ${rangeStart} to ${rangeEnd}`);
       }
 
       const summary = await storage.getInvoicePaymentSummary({ startDate: rangeStart, endDate: rangeEnd });
+      console.log(`[Finance] Results:`, summary);
       res.json(summary);
     } catch (error) {
       console.error("Error fetching finance sales summary:", error);
@@ -1056,6 +1059,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ opening });
     } catch (error) {
       console.error("Error fetching opening balance:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Debug endpoint to check invoice payment data
+  app.get("/api/debug/invoices", authMiddleware, async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices({ limit: 10 });
+      const summary = invoices.map((inv: any) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        paymentMode: inv.paymentMode,
+        grandTotal: inv.grandTotal,
+        cashAmount: inv.cashAmount,
+        cardAmount: inv.cardAmount,
+        createdAt: inv.createdAt,
+      }));
+      res.json({ 
+        count: invoices.length,
+        invoices: summary,
+        message: "Recent 10 invoices with payment data"
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

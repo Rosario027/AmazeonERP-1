@@ -64,22 +64,22 @@ async function ensureSchemaUpdates() {
     log("✓ Ensured invoices payment split columns");
 
     // Backfill existing invoices based on payment mode
-    await pool.query(`
+    // Update Cash invoices
+    const cashResult = await pool.query(`
       UPDATE invoices
-      SET 
-        cash_amount = CASE
-          WHEN payment_mode = 'Cash' THEN grand_total
-          WHEN payment_mode = 'Cash+Card' THEN COALESCE(cash_amount, 0)
-          ELSE 0
-        END,
-        card_amount = CASE
-          WHEN payment_mode = 'Online' THEN grand_total
-          WHEN payment_mode = 'Cash+Card' THEN COALESCE(card_amount, 0)
-          ELSE 0
-        END
-      WHERE (cash_amount = 0 OR cash_amount IS NULL) AND (card_amount = 0 OR card_amount IS NULL);
+      SET cash_amount = grand_total, card_amount = 0
+      WHERE payment_mode = 'Cash' AND cash_amount = 0 AND card_amount = 0;
     `);
-    log("✓ Backfilled invoice payment amounts");
+    
+    // Update Online invoices
+    const onlineResult = await pool.query(`
+      UPDATE invoices
+      SET cash_amount = 0, card_amount = grand_total
+      WHERE payment_mode = 'Online' AND cash_amount = 0 AND card_amount = 0;
+    `);
+    
+    const totalBackfilled = (cashResult.rowCount || 0) + (onlineResult.rowCount || 0);
+    log(\`✓ Backfilled \${totalBackfilled} invoice payment amounts (\${cashResult.rowCount || 0} cash, \${onlineResult.rowCount || 0} online)\`);
 
     log("Schema updates completed successfully");
   } catch (err) {
