@@ -79,7 +79,7 @@ async function ensureSchemaUpdates() {
     `);
     
     const totalBackfilled = (cashResult.rowCount || 0) + (onlineResult.rowCount || 0);
-    log(\`✓ Backfilled \${totalBackfilled} invoice payment amounts (\${cashResult.rowCount || 0} cash, \${onlineResult.rowCount || 0} online)\`);
+    log(`✓ Backfilled ${totalBackfilled} invoice payment amounts (${cashResult.rowCount || 0} cash, ${onlineResult.rowCount || 0} online)`);
 
     log("Schema updates completed successfully");
   } catch (err) {
