@@ -952,53 +952,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get invoice payment summary (cash/card totals) for date or date range
   app.get("/api/finance/sales-summary", authMiddleware, async (req, res) => {
     try {
       const { date, startDate, endDate } = req.query;
 
-      let rangeStart: string | undefined;
-      let rangeEnd: string | undefined;
-
-      if (date) {
-        // Parse as local date to avoid timezone issues
-        const dateStr = date as string;
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
-        
-        if (!Number.isNaN(start.getTime())) {
-          rangeStart = start.toISOString();
-          rangeEnd = end.toISOString();
-        }
-        console.log(`[Finance] Query for date: ${dateStr}, range: ${rangeStart} to ${rangeEnd}`);
-      } else {
-        if (startDate) {
-          const dateStr = startDate as string;
-          const [year, month, day] = dateStr.split('-').map(Number);
-          const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-          
-          if (!Number.isNaN(start.getTime())) {
-            rangeStart = start.toISOString();
-          }
-        }
-        if (endDate) {
-          const dateStr = endDate as string;
-          const [year, month, day] = dateStr.split('-').map(Number);
-          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
-          
-          if (!Number.isNaN(end.getTime())) {
-            rangeEnd = end.toISOString();
-          }
-        }
-        console.log(`[Finance] Query for range: ${rangeStart} to ${rangeEnd}`);
+      if (!date && !startDate && !endDate) {
+        return res.status(400).json({ message: "Provide either 'date' or 'startDate'/'endDate'" });
       }
 
-      const summary = await storage.getInvoicePaymentSummary({ startDate: rangeStart, endDate: rangeEnd });
-      console.log(`[Finance] Results:`, summary);
+      let rangeStart: string;
+      let rangeEnd: string;
+
+      if (date) {
+        // Single date query - get that day's sales
+        const dateStr = date as string;
+        rangeStart = `${dateStr}T00:00:00.000Z`;
+        rangeEnd = `${dateStr}T23:59:59.999Z`;
+      } else {
+        // Date range query
+        rangeStart = startDate ? `${startDate}T00:00:00.000Z` : new Date(0).toISOString();
+        rangeEnd = endDate ? `${endDate}T23:59:59.999Z` : new Date().toISOString();
+      }
+
+      const summary = await storage.getInvoicePaymentSummary({ 
+        startDate: rangeStart, 
+        endDate: rangeEnd 
+      });
+      
       res.json(summary);
     } catch (error) {
-      console.error("Error fetching finance sales summary:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error("[Finance API] Error in sales-summary:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch sales summary",
+        cashTotal: 0,
+        cardTotal: 0,
+        totalSales: 0,
+        invoiceCount: 0
+      });
     }
   });
 
@@ -1027,39 +1018,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get opening balance for a user for given date: returns previous day's closing if available
+  // Get opening balance (previous day's closing) for a user
   app.get("/api/finance/opening", authMiddleware, async (req, res) => {
     try {
       const user = (req as any).user;
       const { date } = req.query;
       
-      // Parse date correctly to avoid timezone issues
-      let day: Date;
-      if (date) {
-        const dateStr = date as string;
-        const [year, month, dayNum] = dateStr.split('-').map(Number);
-        day = new Date(year, month - 1, dayNum);
-      } else {
-        day = new Date();
-      }
+      const currentDate = date ? date as string : new Date().toISOString().split('T')[0];
       
-      // Get previous day
-      const prev = new Date(day);
-      prev.setDate(prev.getDate() - 1);
-      prev.setHours(0, 0, 0, 0);
-      const prevEnd = new Date(prev);
-      prevEnd.setHours(23, 59, 59, 999);
+      // Calculate previous day
+      const current = new Date(currentDate);
+      const prevDate = new Date(current);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const previousDayStr = prevDate.toISOString().split('T')[0];
+      
+      const prevStart = `${previousDayStr}T00:00:00.000Z`;
+      const prevEnd = `${previousDayStr}T23:59:59.999Z`;
 
       const balances = await storage.getBalances({ 
         userId: user.userId, 
-        startDate: prev.toISOString(), 
-        endDate: prevEnd.toISOString() 
+        startDate: prevStart, 
+        endDate: prevEnd 
       });
-      const opening = balances && balances.length > 0 ? parseFloat(balances[0].closing as any || 0) : 0;
-      res.json({ opening });
+      
+      const opening = balances.length > 0 ? parseFloat(String(balances[0].closing || 0)) : 0;
+      
+      res.json({ opening: Number(opening.toFixed(2)) });
     } catch (error) {
-      console.error("Error fetching opening balance:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error("[Finance API] Error fetching opening balance:", error);
+      res.status(500).json({ opening: 0, message: "Failed to fetch opening balance" });
     }
   });
 

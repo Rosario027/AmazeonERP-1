@@ -170,7 +170,7 @@ export class DatabaseStorage implements IStorage {
     return !!updated;
   }
 
-  async getInvoices(filters?: { startDate?: string; endDate?: string; includeDeleted?: boolean }): Promise<Invoice[]> {
+  async getInvoices(filters?: { startDate?: string; endDate?: string; includeDeleted?: boolean; limit?: number }): Promise<Invoice[]> {
     let query = db.select().from(invoices);
 
     const conditions = [];
@@ -193,7 +193,13 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions)) as any;
     }
 
-    return await query.orderBy(desc(invoices.createdAt));
+    query = query.orderBy(desc(invoices.createdAt)) as any;
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+
+    return await query;
   }
 
   async getInvoiceWithItems(id: number): Promise<InvoiceWithItems | undefined> {
@@ -312,40 +318,54 @@ export class DatabaseStorage implements IStorage {
     totalSales: number;
     invoiceCount: number;
   }> {
-    let query = db
-      .select({
-        cashTotal: sql<string>`COALESCE(SUM(${invoices.cashAmount}), 0)`,
-        cardTotal: sql<string>`COALESCE(SUM(${invoices.cardAmount}), 0)`,
-        invoiceCount: sql<number>`COUNT(*)`,
-      })
-      .from(invoices);
+    try {
+      const conditions: any[] = [isNull(invoices.deletedAt)];
+      
+      // Parse dates correctly to avoid timezone issues
+      if (filters?.startDate) {
+        const start = parseLocalDate(filters.startDate);
+        start.setHours(0, 0, 0, 0);
+        conditions.push(gte(invoices.createdAt, start));
+      }
+      
+      if (filters?.endDate) {
+        const end = parseLocalDate(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        conditions.push(lte(invoices.createdAt, end));
+      }
 
-    const conditions: any[] = [isNull(invoices.deletedAt)];
-    if (filters?.startDate) {
-      const start = parseLocalDate(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      conditions.push(gte(invoices.createdAt, start));
-    }
-    if (filters?.endDate) {
-      const end = parseLocalDate(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      conditions.push(lte(invoices.createdAt, end));
-    }
+      let query = db
+        .select({
+          cashTotal: sql<string>`COALESCE(SUM(CAST(${invoices.cashAmount} AS DECIMAL)), 0)`,
+          cardTotal: sql<string>`COALESCE(SUM(CAST(${invoices.cardAmount} AS DECIMAL)), 0)`,
+          grandTotal: sql<string>`COALESCE(SUM(CAST(${invoices.grandTotal} AS DECIMAL)), 0)`,
+          invoiceCount: sql<number>`COUNT(*)`,
+        })
+        .from(invoices)
+        .where(and(...conditions)) as any;
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      const [row] = await query;
+      
+      const cashTotal = parseFloat(row?.cashTotal || "0");
+      const cardTotal = parseFloat(row?.cardTotal || "0");
+      const grandTotal = parseFloat(row?.grandTotal || "0");
+      const invoiceCount = Number(row?.invoiceCount || 0);
+      
+      return {
+        cashTotal: Number(cashTotal.toFixed(2)),
+        cardTotal: Number(cardTotal.toFixed(2)),
+        totalSales: Number((cashTotal + cardTotal).toFixed(2)),
+        invoiceCount,
+      };
+    } catch (error) {
+      console.error("[Storage] Error in getInvoicePaymentSummary:", error);
+      return {
+        cashTotal: 0,
+        cardTotal: 0,
+        totalSales: 0,
+        invoiceCount: 0,
+      };
     }
-
-    const [row] = await query;
-    const cashTotal = parseFloat(row?.cashTotal || "0");
-    const cardTotal = parseFloat(row?.cardTotal || "0");
-    const invoiceCount = Number(row?.invoiceCount || 0);
-    return {
-      cashTotal,
-      cardTotal,
-      totalSales: cashTotal + cardTotal,
-      invoiceCount,
-    };
   }
 
   async getSettings(): Promise<Setting[]> {
