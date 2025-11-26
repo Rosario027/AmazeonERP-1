@@ -111,13 +111,13 @@ export default function Finance() {
     },
   });
 
-  // Fetch user's withdrawals for selected date
+  // Fetch user's own withdrawals for selected date only
   const withdrawalsQuery = useQuery<Withdrawal[]>({
     queryKey: ["finance:user-withdrawals", selectedDate],
     queryFn: async () => {
       const res = await apiRequest(
         "GET",
-        `/api/finance/withdrawals?startDate=${selectedDate}&endDate=${selectedDate}`,
+        `/api/finance/my-withdrawals?startDate=${selectedDate}&endDate=${selectedDate}`,
       );
       return await res.json();
     },

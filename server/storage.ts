@@ -94,6 +94,7 @@ export interface IStorage {
   updateCashWithdrawal(id: number, data: Partial<{ amount: string; note: string | null }>): Promise<CashWithdrawal | undefined>;
   deleteCashWithdrawal(id: number): Promise<boolean>;
   getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]>;
+  getCashWithdrawalsByUser(filters: { userId: string; startDate?: string; endDate?: string }): Promise<CashWithdrawal[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -583,6 +584,21 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`DATE(${cashWithdrawals.createdAt}) <= ${filters.endDate}`);
     }
     if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    return await query.orderBy(desc(cashWithdrawals.createdAt));
+  }
+
+  async getCashWithdrawalsByUser(filters: { userId: string; startDate?: string; endDate?: string }): Promise<CashWithdrawal[]> {
+    let query = db.select().from(cashWithdrawals);
+    const conditions: any[] = [eq(cashWithdrawals.adminId, filters.userId)];
+    
+    if (filters.startDate) {
+      conditions.push(sql`DATE(${cashWithdrawals.createdAt}) >= ${filters.startDate}`);
+    }
+    if (filters.endDate) {
+      conditions.push(sql`DATE(${cashWithdrawals.createdAt}) <= ${filters.endDate}`);
+    }
+    
+    query = query.where(and(...conditions)) as any;
     return await query.orderBy(desc(cashWithdrawals.createdAt));
   }
 }

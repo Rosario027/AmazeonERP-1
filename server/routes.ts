@@ -1043,6 +1043,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin: fetch balances across users and withdrawals summary
   // Get withdrawals with date filter
+  // Get current user's withdrawals only
+  app.get("/api/finance/my-withdrawals", authMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const { startDate, endDate } = req.query;
+      const withdrawals = await storage.getCashWithdrawalsByUser({
+        userId: user.userId,
+        startDate: startDate as string,
+        endDate: endDate as string,
+      });
+      res.json(withdrawals);
+    } catch (error) {
+      console.error("Error fetching user withdrawals:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get all withdrawals (admin only)
   app.get("/api/finance/withdrawals", authMiddleware, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
