@@ -47,19 +47,48 @@ app.use((req, res, next) => {
   next();
 });
 
-async function ensureExpensesColumns() {
+async function ensureSchemaUpdates() {
   try {
     // Add missing columns if they don't exist so the running app can work without manual DB migration
     await pool.query(`ALTER TABLE IF EXISTS expenses ADD COLUMN IF NOT EXISTS created_by varchar;`);
     await pool.query(`ALTER TABLE IF EXISTS expenses ADD COLUMN IF NOT EXISTS deleted_at timestamp;`);
-    log("Ensured expenses table has created_by and deleted_at columns");
+    log("✓ Ensured expenses table columns");
+
+    // Add invoice_items description column
+    await pool.query(`ALTER TABLE IF EXISTS invoice_items ADD COLUMN IF NOT EXISTS description text;`);
+    log("✓ Ensured invoice_items description column");
+
+    // Add payment split columns to invoices
+    await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS cash_amount numeric(12, 2) DEFAULT 0 NOT NULL;`);
+    await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS card_amount numeric(12, 2) DEFAULT 0 NOT NULL;`);
+    log("✓ Ensured invoices payment split columns");
+
+    // Backfill existing invoices based on payment mode
+    await pool.query(`
+      UPDATE invoices
+      SET 
+        cash_amount = CASE
+          WHEN payment_mode = 'Cash' THEN grand_total
+          WHEN payment_mode = 'Cash+Card' THEN COALESCE(cash_amount, 0)
+          ELSE 0
+        END,
+        card_amount = CASE
+          WHEN payment_mode = 'Online' THEN grand_total
+          WHEN payment_mode = 'Cash+Card' THEN COALESCE(card_amount, 0)
+          ELSE 0
+        END
+      WHERE (cash_amount = 0 OR cash_amount IS NULL) AND (card_amount = 0 OR card_amount IS NULL);
+    `);
+    log("✓ Backfilled invoice payment amounts");
+
+    log("Schema updates completed successfully");
   } catch (err) {
-    log("Failed to ensure expenses columns: " + String(err));
+    log("Failed to ensure schema updates: " + String(err));
   }
 }
 
 (async () => {
-  await ensureExpensesColumns();
+  await ensureSchemaUpdates();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
