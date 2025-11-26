@@ -87,8 +87,124 @@ async function ensureSchemaUpdates() {
   }
 }
 
+// Minimal idempotent creation of staff management tables if migrations not run
+async function ensureStaffSchema() {
+  try {
+    // Extensions
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+
+    // Employees
+    await pool.query(`CREATE TABLE IF NOT EXISTS employees (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      employee_code text UNIQUE NOT NULL,
+      full_name text NOT NULL,
+      phone text,
+      email text,
+      role text NOT NULL DEFAULT 'staff',
+      status text NOT NULL DEFAULT 'active',
+      date_joined date,
+      date_left date,
+      salary numeric(12,2),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_employees_role ON employees(role);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_employees_name_trgm ON employees USING gin(full_name gin_trgm_ops);`);
+
+    // Attendance
+    await pool.query(`CREATE TABLE IF NOT EXISTS employee_attendance (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      employee_id uuid NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      attendance_date date NOT NULL,
+      status text NOT NULL,
+      check_in timestamptz,
+      check_out timestamptz,
+      notes text,
+      created_by uuid,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(employee_id, attendance_date)
+    );`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_attendance_employee_date ON employee_attendance(employee_id, attendance_date);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_attendance_date ON employee_attendance(attendance_date);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_attendance_status ON employee_attendance(status);`);
+
+    // Purchases
+    await pool.query(`CREATE TABLE IF NOT EXISTS employee_purchases (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      employee_id uuid NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      purchase_date date NOT NULL,
+      category text NOT NULL,
+      amount numeric(12,2) NOT NULL CHECK (amount >= 0),
+      payment_mode text NOT NULL DEFAULT 'cash',
+      description text,
+      recorded_by uuid,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_emp_purchases_employee_date ON employee_purchases(employee_id, purchase_date);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_emp_purchases_category ON employee_purchases(category);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_emp_purchases_payment_mode ON employee_purchases(payment_mode);`);
+
+    // Constraints (safe add via DO blocks)
+    await pool.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_employees_role') THEN
+        ALTER TABLE employees ADD CONSTRAINT chk_employees_role CHECK (role IN ('staff','manager','admin'));
+      END IF;
+    END $$;`);
+    await pool.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_employees_status') THEN
+        ALTER TABLE employees ADD CONSTRAINT chk_employees_status CHECK (status IN ('active','inactive'));
+      END IF;
+    END $$;`);
+    await pool.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_attendance_status') THEN
+        ALTER TABLE employee_attendance ADD CONSTRAINT chk_attendance_status CHECK (status IN ('present','absent','half-day','leave'));
+      END IF;
+    END $$;`);
+    await pool.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_emp_purchases_category') THEN
+        ALTER TABLE employee_purchases ADD CONSTRAINT chk_emp_purchases_category CHECK (category IN ('shop-purchase','advance','reimbursement'));
+      END IF;
+    END $$;`);
+    await pool.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_emp_purchases_payment_mode') THEN
+        ALTER TABLE employee_purchases ADD CONSTRAINT chk_emp_purchases_payment_mode CHECK (payment_mode IN ('cash','card','online','salary-deduction'));
+      END IF;
+    END $$;`);
+
+    // Updated_at trigger function
+    await pool.query(`CREATE OR REPLACE FUNCTION set_updated_at()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at := now();
+        RETURN NEW;
+      END; $$ LANGUAGE plpgsql;`);
+    // Triggers (ignore duplicate_object via DO blocks)
+    await pool.query(`DO $$ BEGIN
+      CREATE TRIGGER trg_employees_updated BEFORE UPDATE ON employees
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
+    await pool.query(`DO $$ BEGIN
+      CREATE TRIGGER trg_attendance_updated BEFORE UPDATE ON employee_attendance
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
+    await pool.query(`DO $$ BEGIN
+      CREATE TRIGGER trg_emp_purchases_updated BEFORE UPDATE ON employee_purchases
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
+
+    log('✓ Staff schema ensured');
+  } catch (err) {
+    log('Failed to ensure staff schema: ' + String(err));
+  }
+}
+
 (async () => {
   await ensureSchemaUpdates();
+  await ensureStaffSchema();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
