@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, AlertCircle, TrendingUp, TrendingDown, Pencil, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type BalanceEntry = {
@@ -71,6 +71,7 @@ export default function AdminFinance() {
   const [endDate, setEndDate] = useState<string>(today);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawNote, setWithdrawNote] = useState<string>("");
+  const [editingWithdrawal, setEditingWithdrawal] = useState<Withdrawal | null>(null);
 
   // Fetch admin summary (balances + withdrawals)
   const summaryQuery = useQuery<AdminSummaryResponse>({
@@ -181,6 +182,47 @@ export default function AdminFinance() {
     },
   });
 
+  // Update withdrawal mutation
+  const updateWithdrawalMutation = useMutation({
+    mutationFn: async ({ id, amount, note }: { id: number; amount: number; note?: string }) => {
+      const res = await apiRequest("PATCH", `/api/finance/withdraw/${id}`, { amount, note });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
+      toast({ title: "Withdrawal Updated", description: "Changes saved successfully." });
+      setEditingWithdrawal(null);
+      setWithdrawAmount("");
+      setWithdrawNote("");
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    },
+  });
+
+  // Delete withdrawal mutation
+  const deleteWithdrawalMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/finance/withdraw/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
+      toast({ title: "Withdrawal Deleted", description: "Entry removed successfully." });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    },
+  });
+
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawAmount || "0");
     
@@ -193,10 +235,38 @@ export default function AdminFinance() {
       return;
     }
 
-    withdrawMutation.mutate({ 
-      amount, 
-      note: withdrawNote.trim() || undefined 
-    });
+    if (editingWithdrawal) {
+      updateWithdrawalMutation.mutate({ 
+        id: editingWithdrawal.id, 
+        amount, 
+        note: withdrawNote.trim() || undefined 
+      });
+    } else {
+      withdrawMutation.mutate({ 
+        amount, 
+        note: withdrawNote.trim() || undefined 
+      });
+    }
+  };
+
+  const handleEditWithdrawal = (withdrawal: Withdrawal) => {
+    setEditingWithdrawal(withdrawal);
+    setWithdrawAmount(withdrawal.amount);
+    setWithdrawNote(withdrawal.note || "");
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingWithdrawal(null);
+    setWithdrawAmount("");
+    setWithdrawNote("");
+  };
+
+  const handleDeleteWithdrawal = (id: number) => {
+    if (confirm("Are you sure you want to delete this withdrawal entry?")) {
+      deleteWithdrawalMutation.mutate(id);
+    }
   };
 
   const isLoading = summaryQuery.isLoading || salesQuery.isLoading;
@@ -277,15 +347,21 @@ export default function AdminFinance() {
             </div>
 
             <div className="pt-4 border-t space-y-2 text-sm">
-              <div className="font-medium text-base mb-3">Cash Management</div>
+              <div className="font-medium text-base mb-3">Cash Flow</div>
+              <div className="flex justify-between">
+                <span>Cash from Invoices</span>
+                <span className="font-semibold text-green-600">
+                  +₹{isLoading ? "..." : formatCurrency(salesQuery.data?.cashTotal)}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span>Total Withdrawals</span>
                 <span className="font-semibold text-red-600">
-                  {isLoading ? "..." : `₹${formatCurrency(summaryQuery.data?.totals.withdrawalTotal)}`}
+                  -₹{isLoading ? "..." : formatCurrency(summaryQuery.data?.totals.withdrawalTotal)}
                 </span>
               </div>
-              <div className="flex justify-between pt-2 border-t font-medium">
-                <span>Net Cash Remaining</span>
+              <div className="flex justify-between pt-2 border-t font-medium text-base">
+                <span>Net Cash in Register</span>
                 <span className={netCashAfterWithdrawals >= 0 ? "text-green-600" : "text-red-600"}>
                   {isLoading ? "..." : `₹${formatCurrency(netCashAfterWithdrawals)}`}
                 </span>
@@ -298,7 +374,11 @@ export default function AdminFinance() {
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Cash Withdrawals</CardTitle>
-            <CardDescription>Record cash removed from register for banking or expenses</CardDescription>
+            <CardDescription>
+              {editingWithdrawal 
+                ? `Editing withdrawal #${editingWithdrawal.id}` 
+                : "Record cash removed from register for banking or expenses"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -323,22 +403,34 @@ export default function AdminFinance() {
                 />
               </div>
             </div>
-            <Button
-              onClick={handleWithdraw}
-              disabled={withdrawMutation.isPending || !withdrawAmount}
-            >
-              {withdrawMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Recording...
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="h-4 w-4 mr-2" />
-                  Record Withdrawal
-                </>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleWithdraw}
+                disabled={withdrawMutation.isPending || updateWithdrawalMutation.isPending || !withdrawAmount}
+              >
+                {(withdrawMutation.isPending || updateWithdrawalMutation.isPending) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {editingWithdrawal ? "Updating..." : "Recording..."}
+                  </>
+                ) : editingWithdrawal ? (
+                  <>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Update Withdrawal
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-4 w-4 mr-2" />
+                    Record Withdrawal
+                  </>
+                )}
+              </Button>
+              {editingWithdrawal && (
+                <Button variant="outline" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
               )}
-            </Button>
+            </div>
 
             {/* Recent Withdrawals */}
             <div className="pt-4 space-y-2">
@@ -349,8 +441,8 @@ export default function AdminFinance() {
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/20">
                   {summaryQuery.data.withdrawals.map((withdrawal) => (
                     <div key={withdrawal.id} className="p-3 border rounded-md bg-background">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="space-y-1 flex-1">
                           <div className="text-lg font-semibold text-red-600">
                             -₹{formatCurrency(withdrawal.amount)}
                           </div>
@@ -362,6 +454,24 @@ export default function AdminFinance() {
                           {withdrawal.note && (
                             <div className="text-sm">{withdrawal.note}</div>
                           )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditWithdrawal(withdrawal)}
+                            disabled={deleteWithdrawalMutation.isPending}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteWithdrawal(withdrawal.id)}
+                            disabled={deleteWithdrawalMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-600" />
+                          </Button>
                         </div>
                       </div>
                     </div>

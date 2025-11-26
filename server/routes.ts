@@ -905,6 +905,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update withdrawal
+  app.patch("/api/finance/withdraw/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount, note } = req.body;
+      
+      const updated = await storage.updateCashWithdrawal(parseInt(id), {
+        amount: amount?.toString(),
+        note: note,
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Withdrawal not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating withdrawal:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Delete withdrawal
+  app.delete("/api/finance/withdraw/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteCashWithdrawal(parseInt(id));
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Withdrawal not found" });
+      }
+      
+      res.json({ success: true, message: "Withdrawal deleted" });
+    } catch (error) {
+      console.error("Error deleting withdrawal:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // User: submit closing cash for a day (upsert)
   app.post("/api/finance/closing", authMiddleware, async (req, res) => {
     try {

@@ -91,6 +91,8 @@ export interface IStorage {
   upsertCashBalance(balance: InsertCashBalance): Promise<CashBalance>;
   getBalances(filters?: { userId?: string; startDate?: string; endDate?: string }): Promise<CashBalance[]>;
   createCashWithdrawal(withdrawal: InsertCashWithdrawal): Promise<CashWithdrawal>;
+  updateCashWithdrawal(id: number, data: Partial<{ amount: string; note: string | null }>): Promise<CashWithdrawal | undefined>;
+  deleteCashWithdrawal(id: number): Promise<boolean>;
   getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]>;
 }
 
@@ -552,6 +554,23 @@ export class DatabaseStorage implements IStorage {
   async createCashWithdrawal(withdrawal: InsertCashWithdrawal): Promise<CashWithdrawal> {
     const [row] = await db.insert(cashWithdrawals).values(withdrawal).returning();
     return row;
+  }
+
+  async updateCashWithdrawal(id: number, data: Partial<{ amount: string; note: string | null }>): Promise<CashWithdrawal | undefined> {
+    const [updated] = await db
+      .update(cashWithdrawals)
+      .set(data)
+      .where(eq(cashWithdrawals.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCashWithdrawal(id: number): Promise<boolean> {
+    const result = await db
+      .delete(cashWithdrawals)
+      .where(eq(cashWithdrawals.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   async getCashWithdrawals(filters?: { startDate?: string; endDate?: string }): Promise<CashWithdrawal[]> {
