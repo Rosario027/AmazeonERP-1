@@ -1,4 +1,4 @@
-import { FileText, BarChart3, Package, FileSpreadsheet, TrendingUp, LogOut, DollarSign, Settings } from "lucide-react";
+import { FileText, BarChart3, Package, FileSpreadsheet, TrendingUp, LogOut, DollarSign, Settings, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +38,11 @@ export function AppSidebar() {
       title: "Finance",
       url: "/finance",
       icon: DollarSign,
+    },
+    {
+      title: "Staff",
+      url: "/staff",
+      icon: Users,
     },
   ];
 
@@ -81,6 +86,11 @@ export function AppSidebar() {
       title: "Finance",
       url: "/admin/finance",
       icon: DollarSign,
+    },
+    {
+      title: "Staff",
+      url: "/admin/staff",
+      icon: Users,
     },
   ];
 
