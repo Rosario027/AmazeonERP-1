@@ -36,6 +36,8 @@ export const invoices = pgTable("invoices", {
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).notNull(),
   grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
+  cashAmount: decimal("cash_amount", { precision: 12, scale: 2 }).notNull().default(sql`0`),
+  cardAmount: decimal("card_amount", { precision: 12, scale: 2 }).notNull().default(sql`0`),
   isEdited: boolean("is_edited").default(false).notNull(),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
