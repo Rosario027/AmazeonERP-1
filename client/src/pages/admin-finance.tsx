@@ -72,8 +72,10 @@ export default function AdminFinance() {
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawNote, setWithdrawNote] = useState<string>("");
   const [editingWithdrawal, setEditingWithdrawal] = useState<Withdrawal | null>(null);
+  const [withdrawalFilterStart, setWithdrawalFilterStart] = useState<string>(today);
+  const [withdrawalFilterEnd, setWithdrawalFilterEnd] = useState<string>(today);
 
-  // Fetch admin summary (balances + withdrawals)
+  // Fetch admin summary (balances only - for balance table)
   const summaryQuery = useQuery<AdminSummaryResponse>({
     queryKey: ["finance:admin-summary", startDate, endDate],
     queryFn: async () => {
@@ -84,6 +86,19 @@ export default function AdminFinance() {
       return await res.json();
     },
     enabled: Boolean(startDate && endDate),
+  });
+
+  // Fetch withdrawals separately with their own date filter
+  const withdrawalsQuery = useQuery<Withdrawal[]>({
+    queryKey: ["finance:withdrawals", withdrawalFilterStart, withdrawalFilterEnd],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        `/api/finance/withdrawals?startDate=${withdrawalFilterStart}&endDate=${withdrawalFilterEnd}`,
+      );
+      return await res.json();
+    },
+    enabled: Boolean(withdrawalFilterStart && withdrawalFilterEnd),
   });
 
   // Fetch invoice sales for the period
@@ -150,12 +165,17 @@ export default function AdminFinance() {
     return Array.from(userMap.values());
   }, [summaryQuery.data, userDirectory]);
 
+  // Calculate total withdrawals from separate query
+  const totalWithdrawals = useMemo(() => {
+    if (!withdrawalsQuery.data) return 0;
+    return withdrawalsQuery.data.reduce((sum, w) => sum + parseFloat(w.amount || "0"), 0);
+  }, [withdrawalsQuery.data]);
+
   // Calculate net cash after withdrawals
   const netCashAfterWithdrawals = useMemo(() => {
     const invoiceCash = salesQuery.data?.cashTotal ?? 0;
-    const withdrawals = summaryQuery.data?.totals.withdrawalTotal ?? 0;
-    return invoiceCash - withdrawals;
-  }, [salesQuery.data, summaryQuery.data]);
+    return invoiceCash - totalWithdrawals;
+  }, [salesQuery.data, totalWithdrawals]);
 
   // Record withdrawal mutation
   const withdrawMutation = useMutation({
@@ -166,6 +186,7 @@ export default function AdminFinance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
       queryClient.invalidateQueries({ queryKey: ["finance:admin-sales"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
       toast({ 
         title: "Withdrawal Recorded", 
         description: `₹${withdrawAmount} has been logged successfully.` 
@@ -190,6 +211,7 @@ export default function AdminFinance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
       toast({ title: "Withdrawal Updated", description: "Changes saved successfully." });
       setEditingWithdrawal(null);
       setWithdrawAmount("");
@@ -212,6 +234,7 @@ export default function AdminFinance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
       toast({ title: "Withdrawal Deleted", description: "Entry removed successfully." });
     },
     onError: (error) => {
@@ -357,7 +380,7 @@ export default function AdminFinance() {
               <div className="flex justify-between">
                 <span>Total Withdrawals</span>
                 <span className="font-semibold text-red-600">
-                  -₹{isLoading ? "..." : formatCurrency(summaryQuery.data?.totals.withdrawalTotal)}
+                  -₹{withdrawalsQuery.isLoading ? "..." : formatCurrency(totalWithdrawals)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t font-medium text-base">
@@ -433,13 +456,41 @@ export default function AdminFinance() {
             </div>
 
             {/* Recent Withdrawals */}
-            <div className="pt-4 space-y-2">
-              <h3 className="text-sm font-medium">Recent Withdrawals in Period</h3>
-              {isLoading ? (
+            <div className="pt-4 space-y-3">
+              <h3 className="text-sm font-medium">Withdrawal History</h3>
+              
+              {/* Date Filter for Withdrawals */}
+              <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg bg-muted/20">
+                <div className="space-y-1">
+                  <Label htmlFor="withdrawal-start" className="text-xs">From</Label>
+                  <Input
+                    id="withdrawal-start"
+                    type="date"
+                    value={withdrawalFilterStart}
+                    max={withdrawalFilterEnd}
+                    onChange={(e) => setWithdrawalFilterStart(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="withdrawal-end" className="text-xs">To</Label>
+                  <Input
+                    id="withdrawal-end"
+                    type="date"
+                    value={withdrawalFilterEnd}
+                    min={withdrawalFilterStart}
+                    max={today}
+                    onChange={(e) => setWithdrawalFilterEnd(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+
+              {withdrawalsQuery.isLoading ? (
                 <div className="text-sm text-muted-foreground">Loading...</div>
-              ) : summaryQuery.data?.withdrawals && summaryQuery.data.withdrawals.length > 0 ? (
+              ) : withdrawalsQuery.data && withdrawalsQuery.data.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/20">
-                  {summaryQuery.data.withdrawals.map((withdrawal) => (
+                  {withdrawalsQuery.data.map((withdrawal) => (
                     <div key={withdrawal.id} className="p-3 border rounded-md bg-background">
                       <div className="flex justify-between items-start gap-3">
                         <div className="space-y-1 flex-1">
