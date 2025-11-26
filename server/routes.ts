@@ -714,6 +714,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Withdrawals Report (admin only)
+  app.get("/api/reports/withdrawals", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Missing date range" });
+      }
+
+      const withdrawals = await storage.getCashWithdrawals({
+        startDate: startDate as string,
+        endDate: endDate as string,
+      });
+
+      const users = await storage.getAllUsers();
+      const userMap = new Map(users.map(u => [u.id, u.username]));
+
+      const totalWithdrawals = withdrawals.reduce((sum, w) => sum + parseFloat(w.amount), 0);
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Withdrawals Report");
+
+      worksheet.mergeCells("A1:E1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = `Cash Withdrawals Report (${startDate} to ${endDate})`;
+      titleCell.font = { size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center" };
+
+      worksheet.addRow([]);
+      worksheet.addRow(["Summary"]);
+      worksheet.addRow(["Total Withdrawals", totalWithdrawals.toFixed(2)]);
+      worksheet.addRow(["Total Records", withdrawals.length]);
+
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      const headerRow = worksheet.addRow([
+        "Date & Time",
+        "Amount (₹)",
+        "Admin User",
+        "Note",
+      ]);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE0E0E0" },
+      };
+
+      withdrawals.forEach((withdrawal) => {
+        const date = new Date(withdrawal.createdAt);
+        worksheet.addRow([
+          date.toLocaleString("en-IN"),
+          parseFloat(withdrawal.amount).toFixed(2),
+          userMap.get(withdrawal.adminId) || withdrawal.adminId,
+          withdrawal.note || "—",
+        ]);
+      });
+
+      if (worksheet.columns) {
+        worksheet.columns.forEach((column) => {
+          if (column && column.eachCell) {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: false }, (cell) => {
+              const cellValue = cell.value ? cell.value.toString() : "";
+              maxLength = Math.max(maxLength, cellValue.length);
+            });
+            column.width = Math.min(Math.max(maxLength + 2, 12), 50);
+          }
+        });
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=withdrawals-report-${startDate}-to-${endDate}.xlsx`);
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error generating withdrawals report:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Settings - read by any authenticated user; updates remain admin-only
   app.get("/api/settings", authMiddleware, async (req, res) => {
     try {

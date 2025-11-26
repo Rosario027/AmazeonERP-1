@@ -15,6 +15,8 @@ export default function Reports() {
   const [endDate, setEndDate] = useState("");
   const [expensesStartDate, setExpensesStartDate] = useState("");
   const [expensesEndDate, setExpensesEndDate] = useState("");
+  const [withdrawalsStartDate, setWithdrawalsStartDate] = useState("");
+  const [withdrawalsEndDate, setWithdrawalsEndDate] = useState("");
 
   const downloadMutation = useMutation({
     mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
@@ -74,6 +76,35 @@ export default function Reports() {
     },
   });
 
+  const downloadWithdrawalsMutation = useMutation({
+    mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
+      return await apiRequest("GET", `/api/reports/withdrawals?startDate=${startDate}&endDate=${endDate}`);
+    },
+    onSuccess: async (response, variables) => {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `withdrawals-report-${variables.startDate}-to-${variables.endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Withdrawals report downloaded successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate withdrawals report",
+      });
+    },
+  });
+
   const handleDownload = async () => {
     if (!startDate || !endDate) {
       toast({
@@ -100,6 +131,19 @@ export default function Reports() {
     downloadExpensesMutation.mutate({ startDate: expensesStartDate, endDate: expensesEndDate });
   };
 
+  const handleWithdrawalsDownload = async () => {
+    if (!withdrawalsStartDate || !withdrawalsEndDate) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please select both start and end dates",
+      });
+      return;
+    }
+
+    downloadWithdrawalsMutation.mutate({ startDate: withdrawalsStartDate, endDate: withdrawalsEndDate });
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -111,6 +155,7 @@ export default function Reports() {
         <TabsList className="mb-6">
           <TabsTrigger value="sales" data-testid="tab-sales-report">Sales Report</TabsTrigger>
           <TabsTrigger value="expenses" data-testid="tab-expenses-report">Expenses Report</TabsTrigger>
+          <TabsTrigger value="withdrawals" data-testid="tab-withdrawals-report">Withdrawals Report</TabsTrigger>
         </TabsList>
         <TabsContent value="sales">
 
@@ -226,6 +271,64 @@ export default function Reports() {
               >
                 <Download className="h-4 w-4 mr-2" />
                 {downloadExpensesMutation.isPending ? "Generating Report..." : "Download Excel Report"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="withdrawals">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Generate Withdrawals Report</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="withdrawalsStartDate" className="text-sm font-medium">
+                    Start Date <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="withdrawalsStartDate"
+                    type="date"
+                    value={withdrawalsStartDate}
+                    onChange={(e) => setWithdrawalsStartDate(e.target.value)}
+                    className="h-12"
+                    data-testid="input-withdrawals-start-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="withdrawalsEndDate" className="text-sm font-medium">
+                    End Date <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="withdrawalsEndDate"
+                    type="date"
+                    value={withdrawalsEndDate}
+                    onChange={(e) => setWithdrawalsEndDate(e.target.value)}
+                    className="h-12"
+                    data-testid="input-withdrawals-end-date"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-muted p-6 rounded-md space-y-2">
+                <h3 className="font-semibold text-sm mb-3">Report Includes:</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Total Cash Withdrawals</li>
+                  <li>• Withdrawal Count</li>
+                  <li>• Detailed Withdrawal Records</li>
+                  <li>• Date, Amount, Note, and Admin User for Each Entry</li>
+                </ul>
+              </div>
+
+              <Button
+                className="w-full h-12"
+                onClick={handleWithdrawalsDownload}
+                disabled={downloadWithdrawalsMutation.isPending}
+                data-testid="button-download-withdrawals-report"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {downloadWithdrawalsMutation.isPending ? "Generating Report..." : "Download Excel Report"}
               </Button>
             </CardContent>
           </Card>
