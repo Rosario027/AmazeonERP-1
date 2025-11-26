@@ -1043,6 +1043,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin: fetch balances across users and withdrawals summary
   // Get withdrawals with date filter
+  // Get cumulative cash in shop (all-time cash sales - all-time withdrawals)
+  app.get("/api/finance/cash-in-shop", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      // Get all-time cash sales
+      const allTimeSales = await storage.getInvoicePaymentSummary({});
+      
+      // Get all-time withdrawals
+      const allTimeWithdrawals = await storage.getCashWithdrawals({});
+      const totalWithdrawals = allTimeWithdrawals.reduce((sum, w) => sum + parseFloat(w.amount || "0"), 0);
+      
+      const cashInShop = allTimeSales.cashTotal - totalWithdrawals;
+      
+      res.json({
+        totalCashSales: allTimeSales.cashTotal,
+        totalWithdrawals: totalWithdrawals,
+        cashInShop: Number(cashInShop.toFixed(2)),
+      });
+    } catch (error) {
+      console.error("Error calculating cash in shop:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Get current user's withdrawals only
   app.get("/api/finance/my-withdrawals", authMiddleware, async (req, res) => {
     try {

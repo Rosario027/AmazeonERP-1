@@ -114,6 +114,15 @@ export default function AdminFinance() {
     enabled: Boolean(startDate && endDate),
   });
 
+  // Fetch cumulative cash in shop (all time cash sales - all time withdrawals)
+  const cashInShopQuery = useQuery<{ totalCashSales: number; totalWithdrawals: number; cashInShop: number }>({
+    queryKey: ["finance:cash-in-shop"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/finance/cash-in-shop");
+      return await res.json();
+    },
+  });
+
   // Fetch users for name display
   const usersQuery = useQuery<User[]>({
     queryKey: ["finance:users"],
@@ -187,6 +196,7 @@ export default function AdminFinance() {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
       queryClient.invalidateQueries({ queryKey: ["finance:admin-sales"] });
       queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:cash-in-shop"] });
       toast({ 
         title: "Withdrawal Recorded", 
         description: `₹${withdrawAmount} has been logged successfully.` 
@@ -212,6 +222,7 @@ export default function AdminFinance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
       queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:cash-in-shop"] });
       toast({ title: "Withdrawal Updated", description: "Changes saved successfully." });
       setEditingWithdrawal(null);
       setWithdrawAmount("");
@@ -235,6 +246,7 @@ export default function AdminFinance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:admin-summary"] });
       queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:cash-in-shop"] });
       toast({ title: "Withdrawal Deleted", description: "Entry removed successfully." });
     },
     onError: (error) => {
@@ -375,7 +387,7 @@ export default function AdminFinance() {
             </div>
 
             <div className="pt-4 border-t space-y-2 text-sm">
-              <div className="font-medium text-base mb-3">Cash Flow</div>
+              <div className="font-medium text-base mb-3">Cash Flow (Selected Period)</div>
               <div className="flex justify-between">
                 <span>Cash from Invoices</span>
                 <span className="font-semibold text-green-600">
@@ -389,11 +401,38 @@ export default function AdminFinance() {
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t font-medium text-base">
-                <span>Net Cash in Register</span>
+                <span>Net Cash (Period)</span>
                 <span className={netCashAfterWithdrawals >= 0 ? "text-green-600" : "text-red-600"}>
                   {isLoading ? "..." : `₹${formatCurrency(netCashAfterWithdrawals)}`}
                 </span>
               </div>
+            </div>
+
+            <div className="pt-4 border-t space-y-2 text-sm">
+              <div className="font-medium text-base mb-3 flex items-center gap-2">
+                💰 Cash in Shop (Cumulative)
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>All-time Cash Sales</span>
+                <span className="font-medium">
+                  +₹{cashInShopQuery.isLoading ? "..." : formatCurrency(cashInShopQuery.data?.totalCashSales)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>All-time Withdrawals</span>
+                <span className="font-medium">
+                  -₹{cashInShopQuery.isLoading ? "..." : formatCurrency(cashInShopQuery.data?.totalWithdrawals)}
+                </span>
+              </div>
+              <div className="flex justify-between pt-2 border-t font-bold text-lg">
+                <span>Available Cash in Shop</span>
+                <span className="text-green-600">
+                  {cashInShopQuery.isLoading ? "..." : `₹${formatCurrency(cashInShopQuery.data?.cashInShop)}`}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">
+                This is the cumulative cash available in your shop from all cash sales minus all withdrawals.
+              </p>
             </div>
           </CardContent>
         </Card>

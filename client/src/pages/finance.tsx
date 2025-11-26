@@ -215,6 +215,7 @@ export default function Finance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance:user-withdrawals"] });
       queryClient.invalidateQueries({ queryKey: ["finance:withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["finance:cash-in-shop"] });
       toast({
         title: "Withdrawal Recorded",
         description: `₹${withdrawAmount} has been logged successfully.`,
