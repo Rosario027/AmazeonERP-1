@@ -203,8 +203,14 @@ async function ensureStaffSchema() {
 }
 
 (async () => {
-  await ensureSchemaUpdates();
-  await ensureStaffSchema();
+  try {
+    await ensureSchemaUpdates();
+    await ensureStaffSchema();
+  } catch (initErr) {
+    log('FATAL: Schema initialization failed: ' + String(initErr));
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -237,4 +243,7 @@ async function ensureStaffSchema() {
   server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
   });
-})();
+})().catch(err => {
+  log('FATAL: Server startup failed: ' + String(err));
+  process.exit(1);
+});
