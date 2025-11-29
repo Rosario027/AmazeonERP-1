@@ -45,7 +45,7 @@ export function InvoiceItemDialog({
   onAddItem,
 }: InvoiceItemDialogProps) {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<string>("");
   const [rate, setRate] = useState<string>("");
   const [gstPercentage, setGstPercentage] = useState<string>("18");
   const [productDescription, setProductDescription] = useState<string>("");
@@ -61,20 +61,21 @@ export function InvoiceItemDialog({
 
   const handleSubmit = () => {
     const product = products.find((p) => p.id.toString() === selectedProductId);
-    if (!product || !rate || quantity < 1) {
+    const parsedQty = parseInt(quantity, 10);
+    if (!product || !rate || !parsedQty || parsedQty < 1) {
       return;
     }
 
     onAddItem({
       productName: product.name,
-      quantity,
+      quantity: parsedQty,
       rate,
       gstPercentage,
       productDescription,
     });
 
     setSelectedProductId("");
-    setQuantity(1);
+    setQuantity("");
     setRate("");
     setGstPercentage("18");
     setProductDescription("");
@@ -112,10 +113,10 @@ export function InvoiceItemDialog({
             </Label>
             <Input
               id="quantity"
-              type="number"
-              min="1"
+              type="text"
+              inputMode="numeric"
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
               className="h-12"
               data-testid="input-dialog-quantity"
             />
@@ -169,7 +170,7 @@ export function InvoiceItemDialog({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!selectedProductId || !rate || quantity < 1}
+            disabled={!selectedProductId || !rate || !quantity || parseInt(quantity, 10) < 1}
             className="w-full"
             data-testid="button-dialog-add-item"
           >
