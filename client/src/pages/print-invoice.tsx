@@ -116,12 +116,9 @@ export default function PrintInvoice() {
   const roundOff = +(roundedGrandTotal - grandTotalRaw);
 
   return (
-    <div style={{
+    <div className="print-wrapper" style={{
       position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      inset: 0,
       background: 'white',
       zIndex: 9999,
       overflow: 'auto'
@@ -137,6 +134,13 @@ export default function PrintInvoice() {
               margin: 0;
               padding: 0;
             }
+            .print-wrapper { overflow: visible !important; }
+            .receipt-container { width:80mm !important; max-width:80mm !important; }
+            table.receipt-items { table-layout: fixed; width:100%; border-collapse:collapse; }
+            table.receipt-items th, table.receipt-items td { white-space: nowrap; }
+            table.receipt-items td.item-name { white-space: normal; word-break: break-word; }
+            /* Avoid page break inside an item detail group */
+            .item-block { page-break-inside: avoid; }
           }
         `}
       </style>
@@ -192,7 +196,13 @@ export default function PrintInvoice() {
 
         <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }} />
 
-        <table style={{ width: "100%", fontSize: "10px", marginBottom: "8px" }}>
+        <table className="receipt-items" style={{ width: "100%", fontSize: "10px", marginBottom: "8px" }}>
+          <colgroup>
+            <col style={{ width: '55%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '20%' }} />
+          </colgroup>
           <thead>
             <tr style={{ borderBottom: "1px solid #000" }}>
               <th style={{ textAlign: "left", padding: "2px 0" }}>Item</th>
@@ -204,8 +214,8 @@ export default function PrintInvoice() {
           <tbody>
             {items.map((item, index) => (
               <React.Fragment key={index}>
-                <tr>
-                  <td style={{ padding: "4px 0" }}>{item.itemName}</td>
+                <tr className="item-block">
+                  <td className="item-name" style={{ padding: "4px 0" }}>{item.itemName}</td>
                   <td style={{ textAlign: "center", padding: "4px 0" }}>{item.quantity}</td>
                   <td style={{ textAlign: "right", padding: "4px 0" }}>₹{item.rate}</td>
                   <td style={{ textAlign: "right", padding: "4px 0" }}>₹{item.total.toFixed(2)}</td>

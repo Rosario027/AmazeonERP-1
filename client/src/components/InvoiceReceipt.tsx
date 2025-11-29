@@ -74,6 +74,9 @@ export function InvoiceReceipt({
             .no-print {
               display: none !important;
             }
+            .receipt-container { width:80mm !important; max-width:80mm !important; }
+            .receipt-item-row { page-break-inside: avoid; }
+            .receipt-item-header, .receipt-totals-row { display:flex; justify-content:space-between; }
           }
         `}
       </style>
@@ -147,22 +150,22 @@ export function InvoiceReceipt({
         {/* Items Table */}
         <div style={{ marginBottom: "8px" }}>
           {items.map((item, index) => (
-            <div key={index} style={{ marginBottom: "6px", fontSize: "10px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "2px" }}>
-                <div style={{ flex: "1" }}>{item.itemName}</div>
-                <div style={{ textAlign: "right" }}>₹{item.total.toFixed(2)}</div>
+            <div key={index} className="receipt-item-row" style={{ marginBottom: "6px", fontSize: "10px" }}>
+              <div className="receipt-item-header" style={{ fontWeight: "bold", marginBottom: "2px" }}>
+                <div style={{ flex: "1", wordBreak: 'break-word' }}>{item.itemName}</div>
+                <div style={{ textAlign: "right", whiteSpace:'nowrap' }}>₹{item.total.toFixed(2)}</div>
               </div>
               <div style={{ fontSize: "9px", color: "#333", marginBottom: "2px" }}>
                 HSN: {item.hsnCode} | Qty: {item.quantity} x ₹{parseFloat(item.rate).toFixed(2)}
               </div>
               {item.description && (
-                <div style={{ fontSize: "9px", color: "#666", marginBottom: "2px" }}>
+                <div style={{ fontSize: "9px", color: "#666", marginBottom: "2px", wordBreak:'break-word' }}>
                   {item.description}
                 </div>
               )}
               <div style={{ fontSize: "9px", color: "#555", display: "flex", justifyContent: "space-between" }}>
                 <span>Taxable: ₹{item.taxableValue.toFixed(2)}</span>
-                <span>CGST: ₹{item.cgstAmount.toFixed(2)} | SGST: ₹{item.sgstAmount.toFixed(2)}</span>
+                <span style={{ whiteSpace:'nowrap' }}>CGST: ₹{item.cgstAmount.toFixed(2)} | SGST: ₹{item.sgstAmount.toFixed(2)}</span>
               </div>
               {index < items.length - 1 && (
                 <div style={{ borderTop: "1px dotted #ccc", marginTop: "4px" }} />
