@@ -87,7 +87,7 @@ export function InvoiceReceipt({
         margin: "0 auto",
         padding: "10px",
         fontFamily: "monospace",
-        fontSize: "13px",
+        fontSize: "12px",
         lineHeight: "1.4",
         color: "#000",
         backgroundColor: "#fff",
@@ -107,16 +107,16 @@ export function InvoiceReceipt({
               }}
             />
           )}
-          <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "4px" }}>
+          <div style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "4px" }}>
             {SHOP_INFO.name}
           </div>
-          <div style={{ fontSize: "11px", marginBottom: "2px", whiteSpace: "pre-line" }}>
+          <div style={{ fontSize: "10px", marginBottom: "2px", whiteSpace: "pre-line" }}>
             {SHOP_INFO.address}
           </div>
-          <div style={{ fontSize: "11px", marginBottom: "2px" }}>
+          <div style={{ fontSize: "10px", marginBottom: "2px" }}>
             Phone: {SHOP_INFO.phone}
           </div>
-          <div style={{ fontSize: "11px", marginBottom: "8px" }}>
+          <div style={{ fontSize: "10px", marginBottom: "8px" }}>
             GST: {SHOP_INFO.gstNumber}
           </div>
         </div>
@@ -128,7 +128,7 @@ export function InvoiceReceipt({
         }} />
 
         {/* Invoice Details */}
-        <div style={{ marginBottom: "8px", fontSize: "12px" }}>
+        <div style={{ marginBottom: "8px", fontSize: "11px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
             <span style={{ fontWeight: "bold" }}>Invoice: {invoiceNumber}</span>
           </div>
@@ -150,20 +150,20 @@ export function InvoiceReceipt({
         {/* Items Table */}
         <div style={{ marginBottom: "8px" }}>
           {items.map((item, index) => (
-            <div key={index} className="receipt-item-row" style={{ marginBottom: "6px", fontSize: "11px" }}>
+            <div key={index} className="receipt-item-row" style={{ marginBottom: "6px", fontSize: "13px" }}>
               <div className="receipt-item-header" style={{ fontWeight: "bold", marginBottom: "2px" }}>
                 <div style={{ flex: "1", wordBreak: 'break-word' }}>{item.itemName}</div>
                 <div style={{ textAlign: "right", whiteSpace:'nowrap' }}>₹{item.total.toFixed(2)}</div>
               </div>
-              <div style={{ fontSize: "10px", color: "#333", marginBottom: "2px" }}>
+              <div style={{ fontSize: "12px", color: "#333", marginBottom: "2px" }}>
                 HSN: {item.hsnCode} | Qty: {item.quantity} x ₹{parseFloat(item.rate).toFixed(2)}
               </div>
               {item.description && (
-                <div style={{ fontSize: "10px", color: "#666", marginBottom: "2px", wordBreak:'break-word' }}>
+                <div style={{ fontSize: "12px", color: "#666", marginBottom: "2px", wordBreak:'break-word' }}>
                   {item.description}
                 </div>
               )}
-              <div style={{ fontSize: "10px", color: "#555", display: "flex", justifyContent: "space-between" }}>
+              <div style={{ fontSize: "12px", color: "#555", display: "flex", justifyContent: "space-between" }}>
                 <span>Taxable: ₹{item.taxableValue.toFixed(2)}</span>
                 <span style={{ whiteSpace:'nowrap' }}>CGST: ₹{item.cgstAmount.toFixed(2)} | SGST: ₹{item.sgstAmount.toFixed(2)}</span>
               </div>
@@ -181,20 +181,20 @@ export function InvoiceReceipt({
         }} />
 
         {/* Totals */}
-        <div style={{ fontSize: "12px", marginBottom: "8px" }}>
+        <div style={{ fontSize: "11px", marginBottom: "8px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
             <span>Taxable Value:</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "11px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "10px" }}>
             <span>CGST:</span>
             <span>₹{totalCgst.toFixed(2)}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px" }}>
             <span>SGST:</span>
             <span>₹{totalSgst.toFixed(2)}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "11px", color: "#333" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px", color: "#333" }}>
             <span>Round Off:</span>
             <span>₹{roundOff.toFixed(2)}</span>
           </div>
@@ -203,7 +203,7 @@ export function InvoiceReceipt({
             justifyContent: "space-between",
             marginBottom: "4px",
             fontWeight: "bold",
-            fontSize: "14px",
+            fontSize: "13px",
           }}>
             <span>Grand Total:</span>
             <span>₹{roundedGrand.toFixed(2)}</span>
@@ -231,7 +231,7 @@ export function InvoiceReceipt({
         {/* Footer Message */}
         <div style={{
           textAlign: "center",
-          fontSize: "12px",
+          fontSize: "11px",
           fontStyle: "italic",
           marginTop: "8px",
           marginBottom: "12px",
@@ -260,7 +260,7 @@ export function InvoiceReceipt({
             }}
           />
           <div style={{
-            fontSize: "11px",
+            fontSize: "10px",
             fontWeight: "bold",
             color: "#000",
             marginTop: "8px",
