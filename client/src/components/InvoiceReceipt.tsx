@@ -234,8 +234,39 @@ export function InvoiceReceipt({
           fontSize: "11px",
           fontStyle: "italic",
           marginTop: "8px",
+          marginBottom: "12px",
         }}>
           Thank you for shopping
+        </div>
+
+        {/* QR Code and Policy */}
+        <div style={{
+          textAlign: "center",
+          marginTop: "12px",
+          marginBottom: "8px",
+        }}>
+          <img 
+            src="/qr-code.png" 
+            alt="WhatsApp QR Code"
+            onError={(e) => {
+              // Hide image if not found
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+            style={{
+              width: "80px",
+              height: "80px",
+              margin: "0 auto 8px",
+              display: "block",
+            }}
+          />
+          <div style={{
+            fontSize: "10px",
+            fontWeight: "bold",
+            color: "#000",
+            marginTop: "8px",
+          }}>
+            No Return / No Exchange
+          </div>
         </div>
       </div>
     </div>
