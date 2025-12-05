@@ -458,7 +458,7 @@ export default function CreateInvoice() {
                 <Label htmlFor="paymentMode" className="text-sm font-medium">
                   Payment Mode <span className="text-destructive">*</span>
                 </Label>
-                <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)} disabled={isEditing || items.length > 0}>
+                <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)} disabled={items.length > 0}>
                   <SelectTrigger className="h-12" data-testid="select-payment-mode">
                     <SelectValue />
                   </SelectTrigger>
@@ -469,11 +469,9 @@ export default function CreateInvoice() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {isEditing 
-                    ? "Payment mode cannot be changed when editing invoices" 
-                    : items.length > 0
-                      ? "Payment mode cannot be changed after adding items"
-                      : (paymentMode === "Cash" ? `Cash: GST ${cashGstMode === 'inclusive' ? 'included in' : 'added to'} rate` : `Online: GST ${onlineGstMode === 'inclusive' ? 'included in' : 'added to'} rate`)
+                  {items.length > 0
+                    ? "Payment mode cannot be changed after adding items"
+                    : (paymentMode === "Cash" ? `Cash: GST ${cashGstMode === 'inclusive' ? 'included in' : 'added to'} rate` : `Online: GST ${onlineGstMode === 'inclusive' ? 'included in' : 'added to'} rate`)
                   }
                 </p>
               </div>
@@ -600,7 +598,7 @@ export default function CreateInvoice() {
                   <Label htmlFor="paymentModeSummary" className="text-sm font-medium">
                     Payment Mode <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)} disabled={isEditing}>
+                  <Select value={paymentMode} onValueChange={(value: "Cash" | "Online" | "Cash+Card") => recalcItemsForPaymentMode(value)}>
                     <SelectTrigger className="h-12" data-testid="select-payment-mode-summary">
                       <SelectValue />
                     </SelectTrigger>
