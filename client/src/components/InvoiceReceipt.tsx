@@ -246,7 +246,7 @@ export function InvoiceReceipt({
           marginBottom: "8px",
         }}>
           <img 
-            src="/whatsapp qr.png" 
+            src="/whatsapp QR.png" 
             alt="WhatsApp QR Code"
             onError={(e) => {
               // Hide image if not found
