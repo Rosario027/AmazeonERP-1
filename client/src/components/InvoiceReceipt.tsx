@@ -155,7 +155,7 @@ export function InvoiceReceipt({
                 <div style={{ flex: "1", wordBreak: 'break-word' }}>{item.itemName}</div>
                 <div style={{ textAlign: "right", whiteSpace:'nowrap' }}>₹{item.total.toFixed(2)}</div>
               </div>
-              <div style={{ fontSize: "10px", color: "#333", marginBottom: "2px" }}>>
+              <div style={{ fontSize: "10px", color: "#333", marginBottom: "2px" }}>
                 HSN: {item.hsnCode} | Qty: {item.quantity} x ₹{parseFloat(item.rate).toFixed(2)}
               </div>
               {item.description && (
