@@ -14,10 +14,12 @@
 
 ```sql
 INSERT INTO users (username, password, role, token_version, updated_at)
-VALUES ('admin', '$2a$10$slYQmyNdGzin7aUMHSVH2OPST9/PgBkqquzi.Ss7KIUgO2t0jKMm2', 'admin', 0, NOW());
+VALUES ('admin', '$2b$10$IIwX1N2flvMI6F.6L27ovuoybduhqYjHpIfaAXvHi587plF7oFugi', 'admin', 0, NOW())
+ON CONFLICT (username) DO UPDATE SET password = '$2b$10$IIwX1N2flvMI6F.6L27ovuoybduhqYjHpIfaAXvHi587plF7oFugi', role = 'admin', updated_at = NOW();
 
 INSERT INTO users (username, password, role, token_version, updated_at)
-VALUES ('user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36DRcT3e', 'user', 0, NOW());
+VALUES ('user', '$2b$10$ixYpBGMES9IhTBroQZRvEe/wFDjZggENU2sHs4QHuw.3UpSsHpT2q', 'user', 0, NOW())
+ON CONFLICT (username) DO UPDATE SET password = '$2b$10$ixYpBGMES9IhTBroQZRvEe/wFDjZggENU2sHs4QHuw.3UpSsHpT2q', role = 'user', updated_at = NOW();
 
 SELECT * FROM users;
 ```

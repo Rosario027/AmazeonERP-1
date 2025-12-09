@@ -10,29 +10,36 @@
 -- These are bcrypt hashed passwords (10 rounds)
 -- ============================================================
 
+-- Delete existing users first (OPTIONAL - uncomment if needed)
+-- DELETE FROM users;
+
 -- Insert Default ADMIN User
-INSERT INTO users (id, username, password, role, token_version, updated_at)
+INSERT INTO users (username, password, role, token_version, updated_at)
 VALUES (
-  'admin-user-id-001',
   'admin',
-  '$2a$10$slYQmyNdGzin7aUMHSVH2OPST9/PgBkqquzi.Ss7KIUgO2t0jKMm2',
+  '$2b$10$IIwX1N2flvMI6F.6L27ovuoybduhqYjHpIfaAXvHi587plF7oFugi',
   'admin',
   0,
   NOW()
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET
+  password = '$2b$10$IIwX1N2flvMI6F.6L27ovuoybduhqYjHpIfaAXvHi587plF7oFugi',
+  role = 'admin',
+  updated_at = NOW();
 
 -- Insert Default NORMAL User
-INSERT INTO users (id, username, password, role, token_version, updated_at)
+INSERT INTO users (username, password, role, token_version, updated_at)
 VALUES (
-  'normal-user-id-001',
   'user',
-  '$2a$10$CdyWu8z2O/v8UF6VvNvkuObvMcWWVVVVVVVVVVVVVVVVVVVVVVVVVV',
+  '$2b$10$ixYpBGMES9IhTBroQZRvEe/wFDjZggENU2sHs4QHuw.3UpSsHpT2q',
   'user',
   0,
   NOW()
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET
+  password = '$2b$10$ixYpBGMES9IhTBroQZRvEe/wFDjZggENU2sHs4QHuw.3UpSsHpT2q',
+  role = 'user',
+  updated_at = NOW();
 
 -- Verify users were created
 SELECT id, username, role FROM users;
