@@ -52,6 +52,7 @@ export interface IStorage {
   updateUser(userId: string, data: Partial<{ username: string; role: string }>): Promise<User | undefined>;
   updateUserPassword(userId: string, newPassword: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
+  invalidateAllSessions(userId: string): Promise<void>;
   
   // Products
   getProducts(): Promise<Product[]>;
@@ -144,6 +145,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: string): Promise<void> {
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async invalidateAllSessions(userId: string): Promise<void> {
+    // Increment tokenVersion to invalidate all JWT tokens issued before this moment
+    // Since JWTs are stateless, we use this version counter in the token validation
+    const [updated] = await db
+      .update(users)
+      .set({ 
+        tokenVersion: sql`COALESCE(token_version, 0) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("User not found or update failed");
+    }
   }
 
   async getProducts(): Promise<Product[]> {

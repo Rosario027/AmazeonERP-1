@@ -8,11 +8,73 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Key, Trash2, Pencil } from "lucide-react";
+import { Plus, Key, Trash2, Pencil, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+
+// Logout All Sessions Button Component
+function LogoutAllSessionsButton() {
+  const { toast } = useToast();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const logoutAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/auth/logout-all-sessions", {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "All sessions have been logged out successfully. You will need to login again.",
+      });
+      setShowConfirmDialog(false);
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout all sessions. Please try again.",
+      });
+    },
+  });
+
+  return (
+    <>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Logout All Sessions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will logout your account from all devices. You will need to login again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => logoutAllMutation.mutate()}>
+              Logout All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Button
+        variant="destructive"
+        onClick={() => setShowConfirmDialog(true)}
+        disabled={logoutAllMutation.isPending}
+        data-testid="button-logout-all-sessions"
+      >
+        <LogOut className="h-4 w-4 mr-2" />
+        {logoutAllMutation.isPending ? "Logging out..." : "Logout All Sessions"}
+      </Button>
+    </>
+  );
+}
 
 export default function Settings() {
   const { toast } = useToast();
@@ -453,6 +515,19 @@ export default function Settings() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Session Management Section */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Session Management</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Logout all active sessions across all devices. This is a one-time action useful when you've sold or lost a device with active login.
+          </p>
+          <LogoutAllSessionsButton />
         </CardContent>
       </Card>
 

@@ -9,6 +9,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"), // 'admin' or 'user'
+  tokenVersion: integer("token_version").default(0).notNull(), // For invalidating sessions
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const products = pgTable("products", {

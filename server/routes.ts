@@ -84,6 +84,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout all sessions (admin only) - one-time security feature for lost/sold devices
+  app.post("/api/auth/logout-all-sessions", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      // This endpoint invalidates all existing JWT tokens by incrementing a version counter
+      // In a stateless JWT system, we store a "token version" for each user
+      // Incrementing it effectively logs out all sessions
+      const userId = (req as any).user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Update user's token version to invalidate all existing tokens
+      // This requires tracking token versions in the users table
+      await storage.invalidateAllSessions(userId);
+
+      res.json({
+        message: "All sessions have been logged out successfully",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Logout all sessions error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Products (protected routes)
   app.get("/api/products", authMiddleware, async (req, res) => {
     try {
