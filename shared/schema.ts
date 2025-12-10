@@ -154,6 +154,17 @@ export const cashWithdrawals = pgTable("cash_withdrawals", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const sessions = pgTable("sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deviceInfo: text("device_info"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  isActive: boolean("is_active").notNull().default(true),
+  loginAt: timestamp("login_at", { withTimezone: true }).defaultNow().notNull(),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Relations
 export const invoicesRelations = relations(invoices, ({ many }) => ({
   items: many(invoiceItems),
@@ -197,6 +208,12 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   updatedAt: true,
 });
 
+export const insertSessionSchema = createInsertSchema(sessions).omit({
+  id: true,
+  loginAt: true,
+  lastActivityAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -221,6 +238,9 @@ export type InsertCashBalance = typeof cashBalances.$inferInsert;
 
 export type CashWithdrawal = typeof cashWithdrawals.$inferSelect;
 export type InsertCashWithdrawal = typeof cashWithdrawals.$inferInsert;
+
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = z.infer<typeof insertSessionSchema>;
 
 // Extended types for frontend
 export type InvoiceWithItems = Invoice & {

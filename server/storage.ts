@@ -13,6 +13,7 @@ import {
   settings,
   cashBalances,
   cashWithdrawals,
+  sessions,
   type User,
   type InsertUser,
   type Product,
@@ -30,6 +31,8 @@ import {
   type InsertCashBalance,
   type CashWithdrawal,
   type InsertCashWithdrawal,
+  type Session,
+  type InsertSession,
   employees,
   employeeAttendance,
   employeePurchases,
@@ -53,6 +56,14 @@ export interface IStorage {
   updateUserPassword(userId: string, newPassword: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
   invalidateAllSessions(userId: string): Promise<void>;
+  
+  // Sessions
+  createSession(session: InsertSession): Promise<Session>;
+  getSession(sessionId: string): Promise<Session | undefined>;
+  getAllActiveSessions(): Promise<(Session & { username: string; role: string })[]>;
+  updateSessionActivity(sessionId: string): Promise<void>;
+  terminateSession(sessionId: string): Promise<void>;
+  terminateUserSessions(userId: string): Promise<void>;
   
   // Products
   getProducts(): Promise<Product[]>;
@@ -162,6 +173,65 @@ export class DatabaseStorage implements IStorage {
     if (!updated) {
       throw new Error("User not found or update failed");
     }
+    
+    // Also terminate all active sessions for this user
+    await this.terminateUserSessions(userId);
+  }
+
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db.insert(sessions).values(session).returning();
+    return newSession;
+  }
+
+  async getSession(sessionId: string): Promise<Session | undefined> {
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.isActive, true)));
+    return session || undefined;
+  }
+
+  async getAllActiveSessions(): Promise<(Session & { username: string; role: string })[]> {
+    const activeSessions = await db
+      .select({
+        id: sessions.id,
+        userId: sessions.userId,
+        deviceInfo: sessions.deviceInfo,
+        ipAddress: sessions.ipAddress,
+        userAgent: sessions.userAgent,
+        isActive: sessions.isActive,
+        loginAt: sessions.loginAt,
+        lastActivityAt: sessions.lastActivityAt,
+        username: users.username,
+        role: users.role,
+      })
+      .from(sessions)
+      .innerJoin(users, eq(sessions.userId, users.id))
+      .where(eq(sessions.isActive, true))
+      .orderBy(desc(sessions.lastActivityAt));
+    
+    return activeSessions;
+  }
+
+  async updateSessionActivity(sessionId: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ lastActivityAt: new Date() })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  async terminateSession(sessionId: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.id, sessionId));
+  }
+
+  async terminateUserSessions(userId: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.userId, userId));
   }
 
   async getProducts(): Promise<Product[]> {
