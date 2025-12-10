@@ -36,6 +36,7 @@ export default function Login() {
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("auth_token", data.token);
+      localStorage.setItem("login_time", Date.now().toString());
 
       toast({
         title: "Welcome!",
