@@ -8,11 +8,177 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Key, Trash2, Pencil, LogOut } from "lucide-react";
+import { Plus, Key, Trash2, Pencil, LogOut, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+
+interface ActiveSession {
+  id: string;
+  userId: string;
+  username: string;
+  role: string;
+  deviceInfo: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  loginAt: string;
+  lastActivityAt: string;
+  isActive: boolean;
+}
+
+// Active Sessions Component
+function ActiveSessions() {
+  const { toast } = useToast();
+  const [sessionToTerminate, setSessionToTerminate] = useState<string | null>(null);
+
+  const { data: sessions = [], isLoading: sessionsLoading, refetch } = useQuery<ActiveSession[]>({
+    queryKey: ["/api/admin/sessions"],
+    refetchInterval: 30000,
+  });
+
+  const terminateSessionMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const res = await apiRequest("POST", `/api/admin/sessions/${sessionId}/terminate`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sessions"] });
+      toast({
+        title: "Success",
+        description: "Session terminated successfully",
+      });
+      setSessionToTerminate(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to terminate session",
+      });
+    },
+  });
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getTimeSince = (dateString: string) => {
+    const now = new Date();
+    const then = new Date(dateString);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Active Sessions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sessionsLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading sessions...</div>
+          ) : sessions.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No active sessions found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">User</TableHead>
+                    <TableHead className="font-semibold">Device/Browser</TableHead>
+                    <TableHead className="font-semibold">IP Address</TableHead>
+                    <TableHead className="font-semibold">Login Time</TableHead>
+                    <TableHead className="font-semibold">Last Activity</TableHead>
+                    <TableHead className="font-semibold text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((session) => (
+                    <TableRow key={session.id} className="hover-elevate">
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{session.username}</span>
+                          <Badge variant={session.role === "admin" ? "default" : "secondary"}>
+                            {session.role}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{session.deviceInfo || "Unknown"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {session.ipAddress || "Unknown"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatDateTime(session.loginAt)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span className="text-muted-foreground">
+                          {getTimeSince(session.lastActivityAt)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSessionToTerminate(session.id)}
+                          data-testid={`button-terminate-session-${session.id}`}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Terminate
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={!!sessionToTerminate} onOpenChange={() => setSessionToTerminate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Terminate Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately sign out the user from this device/browser. They will need to login again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => sessionToTerminate && terminateSessionMutation.mutate(sessionToTerminate)}
+            >
+              Terminate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
 
 // Logout All Sessions Button Component
 function LogoutAllSessionsButton() {
@@ -574,6 +740,9 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Active Sessions Section - Admin Only */}
+      <ActiveSessions />
 
       {/* GST Calculation Settings Section */}
       <Card>
