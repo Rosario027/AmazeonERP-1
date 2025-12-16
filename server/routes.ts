@@ -9,6 +9,19 @@ import { z } from "zod";
 import { generateToken, authMiddleware, adminMiddleware } from "./auth";
 import ExcelJS from "exceljs";
 
+function parseDeviceInfo(userAgent: string): string {
+  if (userAgent.includes("Mobile") || userAgent.includes("Android") || userAgent.includes("iPhone")) {
+    if (userAgent.includes("Android")) return "Android Mobile";
+    if (userAgent.includes("iPhone")) return "iPhone";
+    return "Mobile Device";
+  }
+  if (userAgent.includes("Chrome")) return "Chrome Browser";
+  if (userAgent.includes("Firefox")) return "Firefox Browser";
+  if (userAgent.includes("Safari")) return "Safari Browser";
+  if (userAgent.includes("Edge")) return "Edge Browser";
+  return "Desktop Browser";
+}
+
 function normalizePaymentSplit(
   paymentMode: string,
   grandTotal: number,
@@ -69,10 +82,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      const userAgent = req.headers["user-agent"] || "Unknown";
+      const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || 
+                        req.socket.remoteAddress || 
+                        "Unknown";
+      
+      const deviceInfo = parseDeviceInfo(userAgent);
+
+      const session = await storage.createSession({
+        userId: user.id,
+        deviceInfo,
+        ipAddress,
+        userAgent,
+        isActive: true,
+      });
+
       const token = generateToken({
         userId: user.id,
         username: user.username,
         role: user.role,
+        sessionId: session.id,
       });
 
       res.json({
@@ -906,6 +935,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteUser(req.params.id);
       res.json({ success: true });
     } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Session management - admin only
+  app.get("/api/admin/sessions", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getAllActiveSessions();
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/admin/sessions/:sessionId/terminate", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const currentUser = (req as any).user;
+      
+      const session = await storage.getSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      if (session.userId === currentUser.userId && session.id === currentUser.sessionId) {
+        return res.status(400).json({ message: "Cannot terminate your own current session" });
+      }
+      
+      await storage.terminateSession(sessionId);
+      res.json({ success: true, message: "Session terminated successfully" });
+    } catch (error) {
+      console.error("Error terminating session:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
