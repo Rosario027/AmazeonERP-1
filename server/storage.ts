@@ -706,6 +706,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(payload: NewEmployee): Promise<Employee> {
     const [row] = await db.insert(employees).values(payload).returning();
+    if (!row) {
+      throw new Error("Failed to create employee - no record returned");
+    }
     return row;
   }
 
@@ -723,6 +726,9 @@ export class DatabaseStorage implements IStorage {
   // Staff Audit Log
   async createAuditLog(payload: NewStaffAuditLog): Promise<StaffAuditLog> {
     const [row] = await db.insert(staffAuditLog).values(payload).returning();
+    if (!row) {
+      throw new Error("Failed to create audit log - no record returned");
+    }
     return row;
   }
 
@@ -818,6 +824,9 @@ export class DatabaseStorage implements IStorage {
         .set({ checkIn: now, status: 'present', updatedAt: now })
         .where(eq(employeeAttendance.id, existing.id))
         .returning();
+      if (!row) {
+        throw new Error("Failed to clock in - no record returned");
+      }
       return row;
     } else {
       // Create new attendance record
@@ -830,6 +839,9 @@ export class DatabaseStorage implements IStorage {
           checkIn: now,
         })
         .returning();
+      if (!row) {
+        throw new Error("Failed to clock in - no record returned");
+      }
       return row;
     }
   }
@@ -849,6 +861,9 @@ export class DatabaseStorage implements IStorage {
       .set({ checkOut: now, updatedAt: now })
       .where(eq(employeeAttendance.id, existing.id))
       .returning();
+    if (!row) {
+      throw new Error("Failed to clock out - no record returned");
+    }
     return row;
   }
 

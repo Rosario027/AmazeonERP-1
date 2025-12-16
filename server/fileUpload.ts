@@ -105,57 +105,71 @@ export const staffUpload = multer({
 export const fileUploadRouter = Router();
 
 // Upload single file
-fileUploadRouter.post("/upload", upload.single("file"), (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+fileUploadRouter.post("/upload", (req: Request, res: Response) => {
+  upload.single("file")(req, res, (err) => {
+    if (err) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ message: err.message || "File upload failed" });
     }
 
-    const fileInfo = {
-      id: req.file.filename,
-      originalName: req.file.originalname,
-      filename: req.file.filename,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      url: `/api/files/${req.file.filename}`,
-    };
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
 
-    res.json({
-      message: "File uploaded successfully",
-      file: fileInfo,
-    });
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ message: "Failed to upload file" });
-  }
+      const fileInfo = {
+        id: req.file.filename,
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: `/api/files/${req.file.filename}`,
+      };
+
+      res.json({
+        message: "File uploaded successfully",
+        file: fileInfo,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
 });
 
 // Upload multiple files (up to 10)
-fileUploadRouter.post("/upload-multiple", upload.array("files", 10), (req: Request, res: Response) => {
-  try {
-    const files = req.files as Express.Multer.File[];
-    
-    if (!files || files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
+fileUploadRouter.post("/upload-multiple", (req: Request, res: Response) => {
+  upload.array("files", 10)(req, res, (err) => {
+    if (err) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ message: err.message || "File upload failed" });
     }
 
-    const fileInfos = files.map((file) => ({
-      id: file.filename,
-      originalName: file.originalname,
-      filename: file.filename,
-      mimetype: file.mimetype,
-      size: file.size,
-      url: `/api/files/${file.filename}`,
-    }));
+    try {
+      const files = req.files as Express.Multer.File[];
+      
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
 
-    res.json({
-      message: "Files uploaded successfully",
-      files: fileInfos,
-    });
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ message: "Failed to upload files" });
-  }
+      const fileInfos = files.map((file) => ({
+        id: file.filename,
+        originalName: file.originalname,
+        filename: file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        url: `/api/files/${file.filename}`,
+      }));
+
+      res.json({
+        message: "Files uploaded successfully",
+        files: fileInfos,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ message: "Failed to upload files" });
+    }
+  });
 });
 
 // Get/download file by filename
@@ -261,41 +275,52 @@ fileUploadRouter.get("/", (req: Request, res: Response) => {
 export const staffUploadRouter = Router();
 
 // Upload staff ID proof files (max 5 files, 5MB total)
-staffUploadRouter.post("/upload", staffUpload.array("files", 5), (req: Request, res: Response) => {
-  try {
-    const files = req.files as Express.Multer.File[];
-    
-    if (!files || files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
+staffUploadRouter.post("/upload", (req: Request, res: Response) => {
+  staffUpload.array("files", 5)(req, res, (err) => {
+    if (err) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ message: err.message || "File upload failed" });
     }
 
-    // Check total size (5MB max)
-    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-    if (totalSize > 5 * 1024 * 1024) {
-      // Delete the uploaded files
-      files.forEach(f => {
-        fs.unlinkSync(f.path);
+    try {
+      const files = req.files as Express.Multer.File[];
+      
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+
+      // Check total size (5MB max)
+      const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+      if (totalSize > 5 * 1024 * 1024) {
+        // Delete the uploaded files
+        files.forEach(f => {
+          try {
+            fs.unlinkSync(f.path);
+          } catch (e) {
+            console.error("Failed to delete file:", e);
+          }
+        });
+        return res.status(400).json({ message: "Total file size must not exceed 5MB" });
+      }
+
+      const fileInfos = files.map((file) => ({
+        id: file.filename,
+        originalName: file.originalname,
+        filename: file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        url: `/api/staff/files/${file.filename}`,
+      }));
+
+      res.json({
+        message: "Files uploaded successfully",
+        files: fileInfos,
       });
-      return res.status(400).json({ message: "Total file size must not exceed 5MB" });
+    } catch (error) {
+      console.error("Staff upload error:", error);
+      res.status(500).json({ message: "Failed to upload files" });
     }
-
-    const fileInfos = files.map((file) => ({
-      id: file.filename,
-      originalName: file.originalname,
-      filename: file.filename,
-      mimetype: file.mimetype,
-      size: file.size,
-      url: `/api/staff/files/${file.filename}`,
-    }));
-
-    res.json({
-      message: "Files uploaded successfully",
-      files: fileInfos,
-    });
-  } catch (error) {
-    console.error("Staff upload error:", error);
-    res.status(500).json({ message: "Failed to upload files" });
-  }
+  });
 });
 
 // Get/download staff file by filename

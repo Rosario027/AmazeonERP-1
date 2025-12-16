@@ -370,11 +370,19 @@ function AddStaffDialog({
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create employee");
+      
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Ignore parse errors
       }
-      return res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create employee");
+      }
+      return data;
     },
     onSuccess: () => {
       toast({ title: "Employee added successfully" });
@@ -798,11 +806,19 @@ function EditStaffDialog({
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update");
+      
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Ignore parse errors
       }
-      return res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update");
+      }
+      return data;
     },
     onSuccess: () => {
       toast({ title: "Employee updated" });
