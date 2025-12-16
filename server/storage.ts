@@ -33,15 +33,18 @@ import {
   employees,
   employeeAttendance,
   employeePurchases,
+  staffAuditLog,
   type Employee,
   type NewEmployee,
   type EmployeeAttendance,
   type NewEmployeeAttendance,
   type EmployeePurchase,
   type NewEmployeePurchase,
+  type StaffAuditLog,
+  type NewStaffAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql, desc, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc, isNull, max } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -634,19 +637,66 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(employees).orderBy(desc(employees.createdAt));
   }
 
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const [row] = await db.select().from(employees).where(eq(employees.id, id));
+    return row || undefined;
+  }
+
+  async getEmployeeByUserId(userId: string): Promise<Employee | undefined> {
+    const [row] = await db.select().from(employees).where(eq(employees.userId, userId));
+    return row || undefined;
+  }
+
+  // Auto-generate next employee code: EMP-1, EMP-2, etc.
+  async getNextEmployeeCode(): Promise<string> {
+    const result = await db
+      .select({ code: employees.employeeCode })
+      .from(employees)
+      .orderBy(desc(employees.createdAt));
+    
+    let maxNum = 0;
+    for (const row of result) {
+      const match = row.code?.match(/^EMP-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    return `EMP-${maxNum + 1}`;
+  }
+
   async createEmployee(payload: NewEmployee): Promise<Employee> {
     const [row] = await db.insert(employees).values(payload).returning();
     return row;
   }
 
   async updateEmployee(id: string, payload: Partial<NewEmployee>): Promise<Employee | undefined> {
-    const [row] = await db.update(employees).set(payload).where(eq(employees.id, id)).returning();
+    const updateData = { ...payload, updatedAt: new Date() };
+    const [row] = await db.update(employees).set(updateData).where(eq(employees.id, id)).returning();
     return row || undefined;
   }
 
   async deleteEmployee(id: string): Promise<boolean> {
     const result = await db.delete(employees).where(eq(employees.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Staff Audit Log
+  async createAuditLog(payload: NewStaffAuditLog): Promise<StaffAuditLog> {
+    const [row] = await db.insert(staffAuditLog).values(payload).returning();
+    return row;
+  }
+
+  async getAuditLogs(employeeId?: string, limit?: number): Promise<StaffAuditLog[]> {
+    let query = db.select().from(staffAuditLog);
+    if (employeeId) {
+      query = query.where(eq(staffAuditLog.employeeId, employeeId)) as any;
+    }
+    query = query.orderBy(desc(staffAuditLog.createdAt)) as any;
+    if (limit) {
+      query = query.limit(limit) as any;
+    }
+    return await query;
   }
 
   // Staff: Attendance
@@ -701,6 +751,91 @@ export class DatabaseStorage implements IStorage {
   async deleteEmployeePurchase(id: string): Promise<boolean> {
     const result = await db.delete(employeePurchases).where(eq(employeePurchases.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Get today's attendance for an employee (for clock in/out)
+  async getTodayAttendance(employeeId: string): Promise<EmployeeAttendance | undefined> {
+    const today = new Date().toISOString().split('T')[0];
+    const [row] = await db
+      .select()
+      .from(employeeAttendance)
+      .where(and(
+        eq(employeeAttendance.employeeId, employeeId),
+        sql`DATE(${employeeAttendance.attendanceDate}) = ${today}`
+      ));
+    return row || undefined;
+  }
+
+  // Clock in for today
+  async clockIn(employeeId: string): Promise<EmployeeAttendance> {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    
+    const existing = await this.getTodayAttendance(employeeId);
+    if (existing) {
+      // Update existing record with check-in time
+      const [row] = await db
+        .update(employeeAttendance)
+        .set({ checkIn: now, status: 'present', updatedAt: now })
+        .where(eq(employeeAttendance.id, existing.id))
+        .returning();
+      return row;
+    } else {
+      // Create new attendance record
+      const [row] = await db
+        .insert(employeeAttendance)
+        .values({
+          employeeId,
+          attendanceDate: today,
+          status: 'present',
+          checkIn: now,
+        })
+        .returning();
+      return row;
+    }
+  }
+
+  // Clock out for today
+  async clockOut(employeeId: string): Promise<EmployeeAttendance | undefined> {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    
+    const existing = await this.getTodayAttendance(employeeId);
+    if (!existing || !existing.checkIn) {
+      return undefined; // Can't clock out without clocking in first
+    }
+    
+    const [row] = await db
+      .update(employeeAttendance)
+      .set({ checkOut: now, updatedAt: now })
+      .where(eq(employeeAttendance.id, existing.id))
+      .returning();
+    return row;
+  }
+
+  // Get all employees currently clocked in (for live working time display)
+  async getActiveEmployees(): Promise<(Employee & { attendance: EmployeeAttendance })[]> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const results = await db
+      .select({
+        employee: employees,
+        attendance: employeeAttendance,
+      })
+      .from(employees)
+      .innerJoin(
+        employeeAttendance,
+        and(
+          eq(employees.id, employeeAttendance.employeeId),
+          sql`DATE(${employeeAttendance.attendanceDate}) = ${today}`
+        )
+      )
+      .where(and(
+        sql`${employeeAttendance.checkIn} IS NOT NULL`,
+        sql`${employeeAttendance.checkOut} IS NULL`
+      ));
+    
+    return results.map(r => ({ ...r.employee, attendance: r.attendance }));
   }
 }
 

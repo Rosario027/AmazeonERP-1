@@ -49,15 +49,27 @@ export const invoices = pgTable("invoices", {
 // Staff Management
 export const employees = pgTable("employees", {
   id: uuid("id").defaultRandom().primaryKey(),
-  employeeCode: text("employee_code").notNull().unique(),
-  fullName: text("full_name").notNull(),
-  phone: text("phone"),
+  employeeCode: text("employee_code").notNull().unique(), // Auto-generated: EMP-1, EMP-2, etc.
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  fullName: text("full_name").notNull(), // Auto-computed from first+last
+  phone: text("phone"), // 10-digit validation
+  alternatePhone: text("alternate_phone"), // 10-digit validation
+  address: text("address"),
   email: text("email"),
+  // Staff credentials
+  userId: text("user_id").unique(), // Login ID for staff
+  password: text("password"), // Hashed password for staff login
+  // ID Proof documents (JSON array of filenames)
+  idProofFiles: text("id_proof_files"), // JSON: [{filename, originalName, mimetype, size}]
   role: text("role").notNull().default("staff"),
   status: text("status").notNull().default("active"),
   dateJoined: date("date_joined"),
   dateLeft: date("date_left"),
   salary: numeric("salary", { precision: 12, scale: 2 }),
+  // Access control
+  createdBy: text("created_by"), // User ID who created this employee
+  isLocked: boolean("is_locked").default(false).notNull(), // Once saved by user, locked for editing
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -89,6 +101,22 @@ export const employeePurchases = pgTable("employee_purchases", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Audit log for staff management edits (admin only)
+export const staffAuditLog = pgTable("staff_audit_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  employeeId: uuid("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // 'create', 'update', 'delete', 'clock_in', 'clock_out'
+  changedBy: text("changed_by").notNull(), // User ID who made the change
+  changedByRole: text("changed_by_role").notNull(), // 'admin' or 'user'
+  previousData: text("previous_data"), // JSON of previous state
+  newData: text("new_data"), // JSON of new state
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type StaffAuditLog = typeof staffAuditLog.$inferSelect;
+export type NewStaffAuditLog = typeof staffAuditLog.$inferInsert;
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;

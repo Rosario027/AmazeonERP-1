@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { generateToken, authMiddleware, adminMiddleware } from "./auth";
 import ExcelJS from "exceljs";
+import { fileUploadRouter, staffUploadRouter } from "./fileUpload";
 
 function normalizePaymentSplit(
   paymentMode: string,
@@ -54,6 +55,10 @@ function normalizePaymentSplit(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // File upload routes
+  app.use("/api/files", fileUploadRouter);
+  app.use("/api/staff/files", staffUploadRouter);
+
   // Authentication
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -1212,8 +1217,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Staff Management
-  // Employees CRUD (admin only for write; list allowed for authenticated)
+  // Staff Management - Enhanced with role-based access
+  
+  // Get next employee code (for auto-generation)
+  app.get("/api/staff/next-code", authMiddleware, async (req, res) => {
+    try {
+      const code = await storage.getNextEmployeeCode();
+      res.json({ code });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // List employees (accessible by all authenticated users)
   app.get("/api/staff/employees", authMiddleware, async (req, res) => {
     try {
       const rows = await storage.listEmployees();
@@ -1223,44 +1239,320 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/staff/employees", authMiddleware, adminMiddleware, async (req, res) => {
-    try {
-      const { employeeCode, fullName, phone, email, role, status, dateJoined, dateLeft, salary } = req.body;
-      if (!employeeCode || !fullName) return res.status(400).json({ message: "Missing required fields" });
-      const row = await storage.createEmployee({
-        employeeCode,
-        fullName,
-        phone: phone || null,
-        email: email || null,
-        role: role || "staff",
-        status: status || "active",
-        dateJoined: dateJoined || null,
-        dateLeft: dateLeft || null,
-        salary: salary || null,
-      } as any);
-      res.status(201).json(row);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  app.patch("/api/staff/employees/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  // Get single employee details
+  app.get("/api/staff/employees/:id", authMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
-      const row = await storage.updateEmployee(id, req.body);
-      if (!row) return res.status(404).json({ message: "Employee not found" });
-      res.json(row);
+      const employee = await storage.getEmployee(id);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      res.json(employee);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
   });
 
+  // Create employee (Admin & User can add, but User's employees get locked after save)
+  app.post("/api/staff/employees", authMiddleware, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const isAdmin = user?.role === 'admin';
+      
+      const { 
+        firstName, lastName, phone, alternatePhone, address, 
+        userId, password, idProofFiles, role, status, dateJoined, salary 
+      } = req.body;
+      
+      // Validation
+      if (!firstName || !lastName) {
+        return res.status(400).json({ message: "First name and last name are required" });
+      }
+      
+      // Phone validation (10 digits)
+      if (phone && !/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ message: "Phone number must be 10 digits" });
+      }
+      if (alternatePhone && !/^\d{10}$/.test(alternatePhone)) {
+        return res.status(400).json({ message: "Alternate phone must be 10 digits" });
+      }
+      
+      // Auto-generate employee code
+      const employeeCode = await storage.getNextEmployeeCode();
+      const fullName = `${firstName} ${lastName}`;
+      
+      // Hash password if provided
+      let hashedPassword = null;
+      if (password) {
+        hashedPassword = await bcrypt.hash(password, 10);
+      }
+      
+      const employee = await storage.createEmployee({
+        employeeCode,
+        firstName,
+        lastName,
+        fullName,
+        phone: phone || null,
+        alternatePhone: alternatePhone || null,
+        address: address || null,
+        userId: userId || null,
+        password: hashedPassword,
+        idProofFiles: idProofFiles ? JSON.stringify(idProofFiles) : null,
+        role: role || "staff",
+        status: status || "active",
+        dateJoined: dateJoined || new Date().toISOString().split('T')[0],
+        salary: salary || null,
+        createdBy: user?.userId || null,
+        isLocked: !isAdmin, // Lock immediately for non-admin users
+      } as any);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        employeeId: employee.id,
+        action: 'create',
+        changedBy: user?.userId || 'unknown',
+        changedByRole: user?.role || 'unknown',
+        newData: JSON.stringify(employee),
+        ipAddress: req.ip || null,
+      });
+      
+      res.status(201).json(employee);
+    } catch (error: any) {
+      console.error("Create employee error:", error);
+      if (error?.code === '23505') { // Unique violation
+        return res.status(400).json({ message: "User ID already exists" });
+      }
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Update employee (Admin can always edit, User cannot edit locked records)
+  app.patch("/api/staff/employees/:id", authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = (req as any).user;
+      const isAdmin = user?.role === 'admin';
+      
+      const existing = await storage.getEmployee(id);
+      if (!existing) return res.status(404).json({ message: "Employee not found" });
+      
+      // Check access control
+      if (!isAdmin && existing.isLocked) {
+        return res.status(403).json({ message: "You cannot edit this employee record" });
+      }
+      
+      const { firstName, lastName, phone, alternatePhone, address, userId, password, idProofFiles, ...rest } = req.body;
+      
+      // Phone validation
+      if (phone && !/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ message: "Phone number must be 10 digits" });
+      }
+      if (alternatePhone && !/^\d{10}$/.test(alternatePhone)) {
+        return res.status(400).json({ message: "Alternate phone must be 10 digits" });
+      }
+      
+      const updateData: any = { ...rest };
+      
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (firstName || lastName) {
+        updateData.fullName = `${firstName || existing.firstName} ${lastName || existing.lastName}`;
+      }
+      if (phone !== undefined) updateData.phone = phone;
+      if (alternatePhone !== undefined) updateData.alternatePhone = alternatePhone;
+      if (address !== undefined) updateData.address = address;
+      if (userId !== undefined) updateData.userId = userId;
+      if (idProofFiles !== undefined) {
+        updateData.idProofFiles = JSON.stringify(idProofFiles);
+      }
+      
+      // Hash new password if provided
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+      
+      const employee = await storage.updateEmployee(id, updateData);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        employeeId: id,
+        action: 'update',
+        changedBy: user?.userId || 'unknown',
+        changedByRole: user?.role || 'unknown',
+        previousData: JSON.stringify(existing),
+        newData: JSON.stringify(employee),
+        ipAddress: req.ip || null,
+      });
+      
+      res.json(employee);
+    } catch (error: any) {
+      console.error("Update employee error:", error);
+      if (error?.code === '23505') {
+        return res.status(400).json({ message: "User ID already exists" });
+      }
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Delete employee (Admin only)
   app.delete("/api/staff/employees/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
+      const user = (req as any).user;
+      
+      const existing = await storage.getEmployee(id);
+      if (!existing) return res.status(404).json({ message: "Employee not found" });
+      
+      // Create audit log before deletion
+      await storage.createAuditLog({
+        employeeId: id,
+        action: 'delete',
+        changedBy: user?.userId || 'unknown',
+        changedByRole: user?.role || 'unknown',
+        previousData: JSON.stringify(existing),
+        ipAddress: req.ip || null,
+      });
+      
       const ok = await storage.deleteEmployee(id);
       if (!ok) return res.status(404).json({ message: "Employee not found" });
       res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Staff login (for employees to login with their userId/password)
+  app.post("/api/staff/login", async (req, res) => {
+    try {
+      const { userId, password } = req.body;
+      
+      if (!userId || !password) {
+        return res.status(400).json({ message: "User ID and password are required" });
+      }
+      
+      const employee = await storage.getEmployeeByUserId(userId);
+      if (!employee) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      if (!employee.password) {
+        return res.status(401).json({ message: "No password set for this account" });
+      }
+      
+      const isValid = await bcrypt.compare(password, employee.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Generate a token for the staff member
+      const token = generateToken({
+        userId: employee.id,
+        username: employee.fullName,
+        role: 'staff',
+        employeeId: employee.id,
+      });
+      
+      res.json({
+        employee: {
+          id: employee.id,
+          employeeCode: employee.employeeCode,
+          fullName: employee.fullName,
+          role: employee.role,
+        },
+        token,
+      });
+    } catch (error) {
+      console.error("Staff login error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Clock in (for staff)
+  app.post("/api/staff/clock-in/:employeeId", authMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      
+      // Check if already clocked in today
+      const existing = await storage.getTodayAttendance(employeeId);
+      if (existing?.checkIn && !existing?.checkOut) {
+        return res.status(400).json({ message: "Already clocked in for today" });
+      }
+      if (existing?.checkOut) {
+        return res.status(400).json({ message: "Already completed work for today" });
+      }
+      
+      const attendance = await storage.clockIn(employeeId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        employeeId,
+        action: 'clock_in',
+        changedBy: (req as any).user?.userId || employeeId,
+        changedByRole: (req as any).user?.role || 'staff',
+        newData: JSON.stringify({ checkIn: attendance.checkIn }),
+        ipAddress: req.ip || null,
+      });
+      
+      res.json(attendance);
+    } catch (error) {
+      console.error("Clock in error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Clock out (for staff)
+  app.post("/api/staff/clock-out/:employeeId", authMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      
+      const attendance = await storage.clockOut(employeeId);
+      if (!attendance) {
+        return res.status(400).json({ message: "Must clock in before clocking out" });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        employeeId,
+        action: 'clock_out',
+        changedBy: (req as any).user?.userId || employeeId,
+        changedByRole: (req as any).user?.role || 'staff',
+        newData: JSON.stringify({ checkOut: attendance.checkOut }),
+        ipAddress: req.ip || null,
+      });
+      
+      res.json(attendance);
+    } catch (error) {
+      console.error("Clock out error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get active employees (currently working - for live timer display)
+  app.get("/api/staff/active", authMiddleware, async (req, res) => {
+    try {
+      const activeEmployees = await storage.getActiveEmployees();
+      res.json(activeEmployees);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get today's attendance for an employee
+  app.get("/api/staff/attendance/today/:employeeId", authMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const attendance = await storage.getTodayAttendance(employeeId);
+      res.json(attendance || null);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get audit logs for an employee (Admin only)
+  app.get("/api/staff/audit-logs/:employeeId", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const logs = await storage.getAuditLogs(employeeId, 100);
+      res.json(logs);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
