@@ -2,15 +2,21 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { Request, Response, Router } from "express";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(process.cwd(), "uploads");
+// Use absolute path relative to this file to ensure consistency regardless of CWD
+const uploadsDir = path.resolve(__dirname, "..", "uploads");
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Create staff ID proofs directory
-const staffUploadsDir = path.join(process.cwd(), "uploads", "staff-id-proofs");
+const staffUploadsDir = path.join(uploadsDir, "staff-id-proofs");
 if (!fs.existsSync(staffUploadsDir)) {
   fs.mkdirSync(staffUploadsDir, { recursive: true });
 }
