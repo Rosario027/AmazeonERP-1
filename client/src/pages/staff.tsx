@@ -767,8 +767,15 @@ function StaffLoginDialog({
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [staffToken, setStaffToken] = useState<string | null>(null);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const qc = useQueryClient();
+
+  // Get auth header - use staff token if logged in as staff, otherwise use admin token
+  const getStaffAuthHeader = (): Record<string, string> => {
+    const token = staffToken || localStorage.getItem("auth_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
     if (open && loggedIn) {
@@ -779,7 +786,7 @@ function StaffLoginDialog({
   const fetchTodayAttendance = async () => {
     try {
       const res = await fetch(`/api/staff/attendance/today/${employee.id}`, {
-        headers: authHeader(),
+        headers: getStaffAuthHeader(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -810,6 +817,10 @@ function StaffLoginDialog({
       }
 
       const data = await res.json();
+      // Store the staff token for subsequent requests
+      if (data.token) {
+        setStaffToken(data.token);
+      }
       toast({ title: `Welcome, ${data.employee.fullName}!` });
       setLoggedIn(true);
       fetchTodayAttendance();
@@ -824,7 +835,7 @@ function StaffLoginDialog({
     try {
       const res = await fetch(`/api/staff/clock-in/${employee.id}`, {
         method: "POST",
-        headers: authHeader(),
+        headers: getStaffAuthHeader(),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -846,7 +857,7 @@ function StaffLoginDialog({
     try {
       const res = await fetch(`/api/staff/clock-out/${employee.id}`, {
         method: "POST",
-        headers: authHeader(),
+        headers: getStaffAuthHeader(),
       });
       
       const data = await res.json().catch(() => ({}));
@@ -868,6 +879,7 @@ function StaffLoginDialog({
     setUserId("");
     setPassword("");
     setLoggedIn(false);
+    setStaffToken(null);
     setTodayAttendance(null);
     onOpenChange(false);
   };

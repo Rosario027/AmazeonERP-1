@@ -9,6 +9,7 @@ export interface JWTPayload {
   username: string;
   role: string;
   sessionId?: string;
+  employeeId?: string; // For staff logins
 }
 
 export function generateToken(payload: JWTPayload): string {
