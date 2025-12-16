@@ -8,11 +8,147 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Key, Trash2, Pencil, LogOut } from "lucide-react";
+import { Plus, Key, Trash2, Pencil, LogOut, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+
+// Session type
+interface UserSession {
+  id: string;
+  userId: string;
+  deviceInfo: string;
+  ipAddress: string;
+  loginTime: string;
+  lastActivity: string;
+  isActive: boolean;
+  username: string;
+  role: string;
+}
+
+// Active Sessions Component
+function ActiveSessionsSection() {
+  const { toast } = useToast();
+  const [terminatingId, setTerminatingId] = useState<string | null>(null);
+
+  const { data: sessions = [], isLoading, refetch } = useQuery<UserSession[]>({
+    queryKey: ["/api/sessions"],
+  });
+
+  const terminateMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const res = await apiRequest("DELETE", `/api/sessions/${sessionId}`, {});
+      if (!res.ok) throw new Error("Failed to terminate");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Session terminated successfully" });
+      refetch();
+      setTerminatingId(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to terminate session", variant: "destructive" });
+      setTerminatingId(null);
+    },
+  });
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  if (isLoading) {
+    return <div className="text-muted-foreground py-4">Loading sessions...</div>;
+  }
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="text-lg font-medium">Active Sessions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {sessions.length === 0 ? (
+          <p className="text-muted-foreground text-center py-4">No active sessions found</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Device/Browser</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Login Time</TableHead>
+                  <TableHead>Last Activity</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sessions.map((session) => (
+                  <TableRow key={session.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{session.username}</span>
+                        <Badge variant={session.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                          {session.role}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                        {session.deviceInfo}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{session.ipAddress}</TableCell>
+                    <TableCell>{formatDate(session.loginTime)}</TableCell>
+                    <TableCell>{getRelativeTime(session.lastActivity)}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTerminatingId(session.id);
+                          terminateMutation.mutate(session.id);
+                        }}
+                        disabled={terminateMutation.isPending && terminatingId === session.id}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        {terminateMutation.isPending && terminatingId === session.id ? "..." : "Terminate"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // Logout All Sessions Button Component
 function LogoutAllSessionsButton() {
@@ -517,6 +653,9 @@ export default function Settings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Active Sessions Section */}
+      <ActiveSessionsSection />
 
       {/* Session Management Section */}
       <Card className="mb-8">

@@ -74,17 +74,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Create a new session
+      const userAgent = req.headers['user-agent'] || 'Unknown Browser';
+      const ipAddress = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'Unknown';
+      
+      // Parse user agent for display
+      let deviceInfo = 'Unknown Browser';
+      if (userAgent.includes('Chrome')) deviceInfo = 'Chrome Browser';
+      else if (userAgent.includes('Firefox')) deviceInfo = 'Firefox Browser';
+      else if (userAgent.includes('Safari')) deviceInfo = 'Safari Browser';
+      else if (userAgent.includes('Edge')) deviceInfo = 'Edge Browser';
+      else if (userAgent.includes('Opera')) deviceInfo = 'Opera Browser';
+      else deviceInfo = userAgent.substring(0, 50);
+
+      const session = await storage.createSession({
+        userId: user.id,
+        deviceInfo,
+        ipAddress: typeof ipAddress === 'string' ? ipAddress.split(',')[0].trim() : ipAddress,
+      });
+
       const token = generateToken({
         userId: user.id,
         username: user.username,
         role: user.role,
+        sessionId: session.id,
       });
 
       res.json({
         user: { id: user.id, username: user.username, role: user.role },
         token,
+        sessionId: session.id,
       });
     } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get active sessions (admin only)
+  app.get("/api/sessions", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const sessions = await storage.getActiveSessions();
+      res.json(sessions);
+    } catch (error) {
+      console.error("Get sessions error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Terminate a specific session (admin only)
+  app.delete("/api/sessions/:sessionId", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const success = await storage.terminateSession(sessionId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      res.json({ message: "Session terminated successfully" });
+    } catch (error) {
+      console.error("Terminate session error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -104,6 +154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user's token version to invalidate all existing tokens
       // This requires tracking token versions in the users table
       await storage.invalidateAllSessions(userId);
+      
+      // Also terminate all sessions in the sessions table
+      await storage.terminateAllUserSessions(userId);
 
       res.json({
         message: "All sessions have been logged out successfully",

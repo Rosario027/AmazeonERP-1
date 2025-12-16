@@ -182,6 +182,20 @@ export const cashWithdrawals = pgTable("cash_withdrawals", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// User Sessions for tracking active logins
+export const userSessions = pgTable("user_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deviceInfo: text("device_info").notNull(), // Browser/device info
+  ipAddress: text("ip_address").notNull(),
+  loginTime: timestamp("login_time", { withTimezone: true }).defaultNow().notNull(),
+  lastActivity: timestamp("last_activity", { withTimezone: true }).defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;
+
 // Relations
 export const invoicesRelations = relations(invoices, ({ many }) => ({
   items: many(invoiceItems),
