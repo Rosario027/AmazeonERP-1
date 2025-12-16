@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
@@ -33,22 +33,44 @@ export default function AdminStaff() {
   });
 
   const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
-  const selectedEmployee = employees?.find(e => e.id === selectedEmployeeId) || null;
+  const selectedEmployee = employees?.find((e) => e.id === selectedEmployeeId) || null;
+
+  const { data: nextCode } = useQuery<{ employeeCode: string }>({
+    queryKey: ["employeeNextCode"],
+    queryFn: async () => {
+      const res = await fetch("/api/staff/employees/next-code", { headers: authHeader() });
+      if (!res.ok) throw new Error("Failed to load next employee code");
+      return res.json();
+    },
+  });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { employeeCode: string; fullName: string }) => {
+    mutationFn: async (payload: { fullName: string; phone?: string; email?: string }) => {
       const res = await fetch("/api/staff/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to create employee");
-      return res.json();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.message || "Failed to create employee");
+      }
+
+      return data;
     },
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["employeeNextCode"] });
       if (data?.id) setSelectedEmployeeId(data.id);
       toast({ title: "Employee added" });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to add employee",
+        description: error?.message || "Server error",
+      });
     },
   });
 
@@ -96,7 +118,11 @@ export default function AdminStaff() {
             <CardTitle>Add Employee</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <EmployeeForm onSubmit={(data) => createMutation.mutate(data)} isSubmitting={createMutation.isPending} />
+            <EmployeeForm
+              nextCode={nextCode?.employeeCode}
+              onSubmit={(data) => createMutation.mutate(data)}
+              isSubmitting={createMutation.isPending}
+            />
           </CardContent>
         </Card>
         {selectedEmployee && (
@@ -167,23 +193,50 @@ export default function AdminStaff() {
   );
 }
 
-function EmployeeForm({ onSubmit, isSubmitting }: { onSubmit: (data: { employeeCode: string; fullName: string }) => void; isSubmitting?: boolean }) {
-  const [code, setCode] = React.useState("");
-  const [name, setName] = React.useState("");
+function EmployeeForm({
+  nextCode,
+  onSubmit,
+  isSubmitting,
+}: {
+  nextCode?: string;
+  onSubmit: (data: { fullName: string; phone?: string; email?: string }) => void;
+  isSubmitting?: boolean;
+}) {
+  const [fullName, setFullName] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [email, setEmail] = React.useState("");
+
+  const phoneValid = phone.length === 0 || phone.length === 10;
+
   return (
     <form
-      className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+      className="grid grid-cols-1 sm:grid-cols-4 gap-3"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!code || !name) return;
-        onSubmit({ employeeCode: code, fullName: name });
-        setCode("");
-        setName("");
+        if (!fullName || !phoneValid) return;
+        onSubmit({
+          fullName,
+          phone: phone || undefined,
+          email: email || undefined,
+        });
+        setFullName("");
+        setPhone("");
+        setEmail("");
       }}
     >
-      <Input placeholder="Employee Code" value={code} onChange={(e) => setCode(e.target.value)} />
-      <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
-      <Button type="submit" disabled={isSubmitting}>Add</Button>
+      <Input placeholder="Employee Code (auto)" value={nextCode || ""} readOnly />
+      <Input placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      <Input
+        placeholder="Phone (10 digits)"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
+      />
+      <Button type="submit" disabled={isSubmitting || !nextCode || !fullName || !phoneValid}>
+        Add
+      </Button>
+      <div className="sm:col-span-4">
+        <Input placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
     </form>
   );
 }
@@ -219,13 +272,23 @@ function EditEmployeeForm({ employee, onSave, onDelete, isSubmitting }: { employ
         <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Input placeholder="Salary" value={salary} onChange={(e) => setSalary(e.target.value)} />
         <Select value={role} onValueChange={setRole}>
-          <option value="staff">Staff</option>
-          <option value="manager">Manager</option>
-          <option value="admin">Admin</option>
+          <SelectTrigger>
+            <SelectValue placeholder="Role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="manager">Manager</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
         </Select>
       </div>
       <div className="flex gap-2">
@@ -237,7 +300,7 @@ function EditEmployeeForm({ employee, onSave, onDelete, isSubmitting }: { employ
 }
 
 function authHeader() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("auth_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -316,10 +379,15 @@ function AttendancePanel({ employee }: { employee: Employee }) {
             <div>
               <label className="block mb-1">Status</label>
               <Select value={status} onValueChange={setStatus}>
-                <option value="present">Present</option>
-                <option value="absent">Absent</option>
-                <option value="half-day">Half-day</option>
-                <option value="leave">Leave</option>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="present">Present</SelectItem>
+                  <SelectItem value="absent">Absent</SelectItem>
+                  <SelectItem value="half-day">Half-day</SelectItem>
+                  <SelectItem value="leave">Leave</SelectItem>
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -437,19 +505,29 @@ function PurchasesPanel({ employee }: { employee: Employee }) {
             <div>
               <label className="block mb-1">Category</label>
               <Select value={category} onValueChange={setCategory}>
-                <option value="shop-purchase">Shop Purchase</option>
-                <option value="advance">Advance</option>
-                <option value="reimbursement">Reimbursement</option>
+                <SelectTrigger>
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shop-purchase">Shop Purchase</SelectItem>
+                  <SelectItem value="advance">Advance</SelectItem>
+                  <SelectItem value="reimbursement">Reimbursement</SelectItem>
+                </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input type="number" step="0.01" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} />
             <Select value={paymentMode} onValueChange={setPaymentMode}>
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="online">Online</option>
-              <option value="salary-deduction">Salary Deduction</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Payment Mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="salary-deduction">Salary Deduction</SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <Textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />

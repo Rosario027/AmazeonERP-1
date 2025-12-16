@@ -704,6 +704,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(employees).orderBy(desc(employees.createdAt));
   }
 
+  async getNextEmployeeCode(): Promise<string> {
+    const pattern = "emp-(\\d+)$";
+    const [row] = await db
+      .select({
+        maxNum: sql<number>`MAX(CAST(SUBSTRING(LOWER(${employees.employeeCode}) FROM ${pattern}) AS INTEGER))`,
+      })
+      .from(employees);
+
+    const nextNum = Number(row?.maxNum ?? 0) + 1;
+    return `emp-${nextNum}`;
+  }
+
   async createEmployee(payload: NewEmployee): Promise<Employee> {
     const [row] = await db.insert(employees).values(payload).returning();
     return row;

@@ -1275,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Staff Management
-  // Employees CRUD (admin only for write; list allowed for authenticated)
+  // Employees CRUD (admin can edit/delete; any authenticated user can create)
   app.get("/api/staff/employees", authMiddleware, async (req, res) => {
     try {
       const rows = await storage.listEmployees();
@@ -1285,12 +1285,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/staff/employees", authMiddleware, adminMiddleware, async (req, res) => {
+  app.get("/api/staff/employees/next-code", authMiddleware, async (_req, res) => {
     try {
-      const { employeeCode, fullName, phone, email, role, status, dateJoined, dateLeft, salary } = req.body;
-      if (!employeeCode || !fullName) return res.status(400).json({ message: "Missing required fields" });
-      const row = await storage.createEmployee({
-        employeeCode,
+      const employeeCode = await storage.getNextEmployeeCode();
+      res.json({ employeeCode });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/staff/employees", authMiddleware, async (req, res) => {
+    try {
+      const { fullName, phone, email, role, status, dateJoined, dateLeft, salary } = req.body;
+      let { employeeCode } = req.body as any;
+
+      if (!fullName) return res.status(400).json({ message: "Missing required fields" });
+      if (phone && !/^\d{10}$/.test(String(phone))) {
+        return res.status(400).json({ message: "Phone must be a 10 digit number" });
+      }
+
+      const buildPayload = (code: string) => ({
+        employeeCode: code,
         fullName,
         phone: phone || null,
         email: email || null,
@@ -1299,9 +1314,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateJoined: dateJoined || null,
         dateLeft: dateLeft || null,
         salary: salary || null,
-      } as any);
-      res.status(201).json(row);
+      });
+
+      if (!employeeCode) {
+        employeeCode = await storage.getNextEmployeeCode();
+      }
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const row = await storage.createEmployee(buildPayload(employeeCode) as any);
+          return res.status(201).json(row);
+        } catch (error: any) {
+          // Unique violation: another request might have taken the same auto-generated code
+          if (error?.code === "23505") {
+            employeeCode = await storage.getNextEmployeeCode();
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      return res.status(409).json({ message: "Could not allocate a unique employee code. Please try again." });
     } catch (error) {
+      console.error("Error creating employee:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

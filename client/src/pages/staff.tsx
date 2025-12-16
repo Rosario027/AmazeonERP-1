@@ -1,8 +1,10 @@
 import React from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 
 type Employee = {
   id: string;
@@ -14,6 +16,43 @@ type Employee = {
 
 export default function Staff() {
   const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: nextCode } = useQuery<{ employeeCode: string }>({
+    queryKey: ["employeeNextCode"],
+    queryFn: async () => {
+      const res = await fetch("/api/staff/employees/next-code", { headers: authHeader() });
+      if (!res.ok) throw new Error("Failed to load next employee code");
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: { fullName: string; phone?: string; email?: string }) => {
+      const res = await fetch("/api/staff/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Failed to create employee");
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["employeeNextCode"] });
+      toast({ title: "Employee added" });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to add employee",
+        description: error?.message || "Server error",
+      });
+    },
+  });
+
   const { data: employees, isLoading, error } = useQuery<Employee[]>({
     queryKey: ["employees"],
     queryFn: async () => {
@@ -29,7 +68,22 @@ export default function Staff() {
   return (
     <div className="p-4 space-y-6">
       <h1 className="text-xl font-semibold">Staff</h1>
-      <p className="text-sm text-muted-foreground">Welcome, {user?.username}. Select an employee to view attendance & purchases.</p>
+      <p className="text-sm text-muted-foreground">
+        Welcome, {user?.username}. You can add employees and view their attendance & purchases.
+      </p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Employee</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <EmployeeForm
+            nextCode={nextCode?.employeeCode}
+            onSubmit={(data) => createMutation.mutate(data)}
+            isSubmitting={createMutation.isPending}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -79,6 +133,54 @@ export default function Staff() {
         </div>
       )}
     </div>
+  );
+}
+
+function EmployeeForm({
+  nextCode,
+  onSubmit,
+  isSubmitting,
+}: {
+  nextCode?: string;
+  onSubmit: (data: { fullName: string; phone?: string; email?: string }) => void;
+  isSubmitting?: boolean;
+}) {
+  const [fullName, setFullName] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [email, setEmail] = React.useState("");
+
+  const phoneValid = phone.length === 0 || phone.length === 10;
+
+  return (
+    <form
+      className="grid grid-cols-1 sm:grid-cols-4 gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!fullName || !phoneValid) return;
+        onSubmit({
+          fullName,
+          phone: phone || undefined,
+          email: email || undefined,
+        });
+        setFullName("");
+        setPhone("");
+        setEmail("");
+      }}
+    >
+      <Input placeholder="Employee Code (auto)" value={nextCode || ""} readOnly />
+      <Input placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      <Input
+        placeholder="Phone (10 digits)"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
+      />
+      <Button type="submit" disabled={isSubmitting || !nextCode || !fullName || !phoneValid}>
+        Add
+      </Button>
+      <div className="sm:col-span-4">
+        <Input placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+    </form>
   );
 }
 
@@ -176,6 +278,6 @@ function UserPurchases({ employee }: { employee: Employee }) {
 }
 
 function authHeader() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("auth_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
