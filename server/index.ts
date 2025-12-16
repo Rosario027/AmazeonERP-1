@@ -191,10 +191,35 @@ async function ensureStaffSchema() {
       CREATE TRIGGER trg_attendance_updated BEFORE UPDATE ON employee_attendance
       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
-    await pool.query(`DO $$ BEGIN
+    await pool.query(`DO $ BEGIN
       CREATE TRIGGER trg_emp_purchases_updated BEFORE UPDATE ON employee_purchases
       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
+    EXCEPTION WHEN duplicate_object THEN NULL; END $;`);
+
+    // Ensure enhanced staff columns exist
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS first_name text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS last_name text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS alternate_phone text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS address text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS user_id text UNIQUE;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS password text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS id_proof_files text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS created_by text;`);
+    await pool.query(`ALTER TABLE IF EXISTS employees ADD COLUMN IF NOT EXISTS is_locked boolean DEFAULT false NOT NULL;`);
+
+    // Ensure staff_audit_log table exists
+    await pool.query(`CREATE TABLE IF NOT EXISTS staff_audit_log (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      employee_id uuid NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      action text NOT NULL,
+      changed_by text NOT NULL,
+      changed_by_role text NOT NULL,
+      previous_data text,
+      new_data text,
+      ip_address text,
+      created_at timestamptz DEFAULT now() NOT NULL
+    );`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_staff_audit_employee ON staff_audit_log(employee_id);`);
 
     log('✓ Staff schema ensured');
   } catch (err) {
