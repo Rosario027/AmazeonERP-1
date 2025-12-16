@@ -20,8 +20,9 @@ interface UserSession {
   userId: string;
   deviceInfo: string;
   ipAddress: string;
-  loginTime: string;
-  lastActivity: string;
+  userAgent: string;
+  loginAt: string;
+  lastActivityAt: string;
   isActive: boolean;
   username: string;
   role: string;
@@ -33,12 +34,12 @@ function ActiveSessionsSection() {
   const [terminatingId, setTerminatingId] = useState<string | null>(null);
 
   const { data: sessions = [], isLoading, refetch } = useQuery<UserSession[]>({
-    queryKey: ["/api/sessions"],
+    queryKey: ["/api/admin/sessions"],
   });
 
   const terminateMutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      const res = await apiRequest("DELETE", `/api/sessions/${sessionId}`, {});
+      const res = await apiRequest("DELETE", `/api/admin/sessions/${sessionId}/terminate`, {});
       if (!res.ok) throw new Error("Failed to terminate");
       return res.json();
     },
@@ -122,8 +123,8 @@ function ActiveSessionsSection() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{session.ipAddress}</TableCell>
-                    <TableCell>{formatDate(session.loginTime)}</TableCell>
-                    <TableCell>{getRelativeTime(session.lastActivity)}</TableCell>
+                    <TableCell>{formatDate(session.loginAt)}</TableCell>
+                    <TableCell>{getRelativeTime(session.lastActivityAt)}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"

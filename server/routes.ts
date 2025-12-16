@@ -91,6 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: user.id,
         deviceInfo,
         ipAddress: typeof ipAddress === 'string' ? ipAddress.split(',')[0].trim() : ipAddress,
+        userAgent,
       });
 
       const token = generateToken({
@@ -112,10 +113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get active sessions (admin only)
-  app.get("/api/sessions", authMiddleware, adminMiddleware, async (req, res) => {
+  app.get("/api/admin/sessions", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-      const sessions = await storage.getActiveSessions();
-      res.json(sessions);
+      const activeSessions = await storage.getAllActiveSessions();
+      res.json(activeSessions);
     } catch (error) {
       console.error("Get sessions error:", error);
       res.status(500).json({ message: "Server error" });
@@ -123,15 +124,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Terminate a specific session (admin only)
-  app.delete("/api/sessions/:sessionId", authMiddleware, adminMiddleware, async (req, res) => {
+  app.delete("/api/admin/sessions/:sessionId/terminate", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const success = await storage.terminateSession(sessionId);
-      
-      if (!success) {
-        return res.status(404).json({ message: "Session not found" });
-      }
-      
+      await storage.terminateSession(sessionId);
       res.json({ message: "Session terminated successfully" });
     } catch (error) {
       console.error("Terminate session error:", error);
@@ -156,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.invalidateAllSessions(userId);
       
       // Also terminate all sessions in the sessions table
-      await storage.terminateAllUserSessions(userId);
+      await storage.terminateUserSessions(userId);
 
       res.json({
         message: "All sessions have been logged out successfully",

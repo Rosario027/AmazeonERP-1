@@ -202,10 +202,34 @@ async function ensureStaffSchema() {
   }
 }
 
+// Ensure sessions table exists for session management
+async function ensureSessionsSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id text NOT NULL,
+        device_info text,
+        ip_address text,
+        user_agent text,
+        is_active boolean DEFAULT true,
+        login_at timestamptz DEFAULT now(),
+        last_activity_at timestamptz DEFAULT now()
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_is_active ON sessions(is_active);`);
+    log('✓ Sessions schema ensured');
+  } catch (err) {
+    log('Failed to ensure sessions schema: ' + String(err));
+  }
+}
+
 (async () => {
   try {
     await ensureSchemaUpdates();
     await ensureStaffSchema();
+    await ensureSessionsSchema();
   } catch (initErr) {
     log('FATAL: Schema initialization failed: ' + String(initErr));
     process.exit(1);

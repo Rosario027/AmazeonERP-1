@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
+import { storage } from "./storage";
 
 const JWT_SECRET = process.env.JWT_SECRET || "amazeon-erp-secret-key-change-in-production";
 
@@ -18,7 +19,7 @@ export function verifyToken(token: string): JWTPayload {
   return jwt.verify(token, JWT_SECRET) as JWTPayload;
 }
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -29,6 +30,17 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
   try {
     const payload = verifyToken(token);
+    
+    // Verify session is still active
+    if (payload.sessionId) {
+      const session = await storage.getSession(payload.sessionId);
+      if (!session || !session.isActive) {
+        return res.status(401).json({ message: "Session has been terminated" });
+      }
+      // Update session activity
+      await storage.updateSessionActivity(payload.sessionId);
+    }
+    
     (req as any).user = payload;
     next();
   } catch (error) {

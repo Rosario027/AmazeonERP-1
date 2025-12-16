@@ -13,7 +13,7 @@ import {
   settings,
   cashBalances,
   cashWithdrawals,
-  userSessions,
+  sessions,
   type User,
   type InsertUser,
   type Product,
@@ -31,8 +31,8 @@ import {
   type InsertCashBalance,
   type CashWithdrawal,
   type InsertCashWithdrawal,
-  type UserSession,
-  type InsertUserSession,
+  type Session,
+  type InsertSession,
   employees,
   employeeAttendance,
   employeePurchases,
@@ -116,13 +116,12 @@ export interface IStorage {
   getCashWithdrawalsByUser(filters: { userId: string; startDate?: string; endDate?: string }): Promise<CashWithdrawal[]>;
 
   // Sessions
-  createSession(session: { userId: string; deviceInfo: string; ipAddress: string }): Promise<UserSession>;
-  getActiveSessions(): Promise<(UserSession & { username: string; role: string })[]>;
-  getUserSessions(userId: string): Promise<UserSession[]>;
-  getSession(sessionId: string): Promise<UserSession | undefined>;
+  createSession(session: InsertSession): Promise<Session>;
+  getSession(sessionId: string): Promise<Session | undefined>;
+  getAllActiveSessions(): Promise<(Session & { username: string; role: string })[]>;
   updateSessionActivity(sessionId: string): Promise<void>;
-  terminateSession(sessionId: string): Promise<boolean>;
-  terminateAllUserSessions(userId: string): Promise<void>;
+  terminateSession(sessionId: string): Promise<void>;
+  terminateUserSessions(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -879,29 +878,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Session Management
-  async createSession(session: { userId: string; deviceInfo: string; ipAddress: string }): Promise<UserSession> {
-    const [newSession] = await db.insert(userSessions).values({
-      userId: session.userId,
-      deviceInfo: session.deviceInfo,
-      ipAddress: session.ipAddress,
-      loginTime: new Date(),
-      lastActivity: new Date(),
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db.insert(sessions).values({
+      ...session,
+      loginAt: new Date(),
+      lastActivityAt: new Date(),
       isActive: true,
     }).returning();
     return newSession;
   }
 
-  async getActiveSessions(): Promise<(UserSession & { username: string; role: string })[]> {
+  async getSession(sessionId: string): Promise<Session | undefined> {
+    const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+    return session || undefined;
+  }
+
+  async getAllActiveSessions(): Promise<(Session & { username: string; role: string })[]> {
     const results = await db
       .select({
-        session: userSessions,
+        session: sessions,
         username: users.username,
         role: users.role,
       })
-      .from(userSessions)
-      .innerJoin(users, eq(userSessions.userId, users.id))
-      .where(eq(userSessions.isActive, true))
-      .orderBy(desc(userSessions.lastActivity));
+      .from(sessions)
+      .innerJoin(users, eq(sessions.userId, users.id))
+      .where(eq(sessions.isActive, true))
+      .orderBy(desc(sessions.lastActivityAt));
     
     return results.map(r => ({
       ...r.session,
@@ -910,40 +912,25 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserSessions(userId: string): Promise<UserSession[]> {
-    return await db
-      .select()
-      .from(userSessions)
-      .where(and(eq(userSessions.userId, userId), eq(userSessions.isActive, true)))
-      .orderBy(desc(userSessions.lastActivity));
-  }
-
-  async getSession(sessionId: string): Promise<UserSession | undefined> {
-    const [session] = await db.select().from(userSessions).where(eq(userSessions.id, sessionId));
-    return session || undefined;
-  }
-
   async updateSessionActivity(sessionId: string): Promise<void> {
     await db
-      .update(userSessions)
-      .set({ lastActivity: new Date() })
-      .where(eq(userSessions.id, sessionId));
+      .update(sessions)
+      .set({ lastActivityAt: new Date() })
+      .where(eq(sessions.id, sessionId));
   }
 
-  async terminateSession(sessionId: string): Promise<boolean> {
-    const [updated] = await db
-      .update(userSessions)
-      .set({ isActive: false })
-      .where(eq(userSessions.id, sessionId))
-      .returning();
-    return !!updated;
-  }
-
-  async terminateAllUserSessions(userId: string): Promise<void> {
+  async terminateSession(sessionId: string): Promise<void> {
     await db
-      .update(userSessions)
+      .update(sessions)
       .set({ isActive: false })
-      .where(eq(userSessions.userId, userId));
+      .where(eq(sessions.id, sessionId));
+  }
+
+  async terminateUserSessions(userId: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.userId, userId));
   }
 }
 
