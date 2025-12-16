@@ -776,16 +776,17 @@ function StaffLoginDialog({
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [staffToken, setStaffToken] = useState<string | null>(null);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
   const qc = useQueryClient();
+  
+  // Use ref to store token so it's always current in callbacks
+  const staffTokenRef = React.useRef<string | null>(null);
 
-  // Get auth header - use staff token if logged in as staff, otherwise use admin token
-  // Can pass token directly for immediate use after login (before state updates)
-  const getStaffAuthHeader = (tokenOverride?: string): Record<string, string> => {
-    const token = tokenOverride || staffToken || localStorage.getItem("auth_token");
+  // Get auth header - always uses the latest token from ref
+  const getStaffAuthHeader = (): Record<string, string> => {
+    const token = staffTokenRef.current || localStorage.getItem("auth_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -795,10 +796,10 @@ function StaffLoginDialog({
     }
   }, [open, loggedIn]);
 
-  const fetchTodayAttendance = async (tokenOverride?: string) => {
+  const fetchTodayAttendance = async () => {
     try {
       const res = await fetch(`/api/staff/attendance/today/${employee.id}`, {
-        headers: getStaffAuthHeader(tokenOverride),
+        headers: getStaffAuthHeader(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -829,15 +830,14 @@ function StaffLoginDialog({
       }
 
       const data = await res.json();
-      // Store the staff token for subsequent requests
-      const newToken = data.token;
-      if (newToken) {
-        setStaffToken(newToken);
+      // Store the staff token in ref for immediate availability
+      if (data.token) {
+        staffTokenRef.current = data.token;
       }
       toast({ title: `Welcome, ${data.employee.fullName}!` });
       setLoggedIn(true);
-      // Pass token directly since state may not have updated yet
-      fetchTodayAttendance(newToken);
+      // Fetch attendance (token is now in ref, so it's immediately available)
+      fetchTodayAttendance();
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     } finally {
@@ -935,7 +935,7 @@ function StaffLoginDialog({
     setUserId("");
     setPassword("");
     setLoggedIn(false);
-    setStaffToken(null);
+    staffTokenRef.current = null;
     setTodayAttendance(null);
     setIsClockingIn(false);
     setIsClockingOut(false);

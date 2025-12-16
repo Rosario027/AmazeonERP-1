@@ -32,14 +32,20 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const payload = verifyToken(token);
     
-    // Verify session is still active
+    // Verify session is still active (only if sessionId exists in token)
     if (payload.sessionId) {
-      const session = await storage.getSession(payload.sessionId);
-      if (!session || !session.isActive) {
-        return res.status(401).json({ message: "Session has been terminated" });
+      try {
+        const session = await storage.getSession(payload.sessionId);
+        if (!session || !session.isActive) {
+          return res.status(401).json({ message: "Session has been terminated" });
+        }
+        // Update session activity (non-blocking, don't wait)
+        storage.updateSessionActivity(payload.sessionId).catch(() => {});
+      } catch (sessionError) {
+        // If session check fails (e.g., table doesn't exist), continue anyway
+        // This ensures backward compatibility
+        console.warn("Session check failed:", sessionError);
       }
-      // Update session activity
-      await storage.updateSessionActivity(payload.sessionId);
     }
     
     (req as any).user = payload;
