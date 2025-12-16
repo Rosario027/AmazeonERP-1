@@ -438,11 +438,20 @@ function AddStaffDialog({
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create employee");
+      
+      // Try to parse response, but don't fail if it's empty
+      let data;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
       }
-      return res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create employee");
+      }
+      return data;
     },
     onSuccess: () => {
       toast({ title: "Employee added successfully", description: "Note: This record is now locked for editing." });
@@ -853,7 +862,14 @@ function StaffLoginDialog({
         headers: getStaffAuthHeader(),
       });
 
-      const data = await res.json().catch(() => ({}));
+      // Parse response safely
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Ignore parse errors
+      }
       
       if (!res.ok) {
         throw new Error(data.message || "Clock in failed");
@@ -891,7 +907,14 @@ function StaffLoginDialog({
         headers: getStaffAuthHeader(),
       });
       
-      const data = await res.json().catch(() => ({}));
+      // Parse response safely
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Ignore parse errors
+      }
 
       if (!res.ok) {
         throw new Error(data.message || "Clock out failed");
