@@ -7,13 +7,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { 
-  UserPlus, Users, Clock, Eye, Upload, X, Calendar,
-  FileText, Image, PlayCircle, StopCircle, LogIn
+  UserPlus, Upload, X, Calendar, ChevronDown, ChevronRight,
+  FileText, Image, PlayCircle, StopCircle, LogIn, Eye, Clock
 } from "lucide-react";
 
 // Types
@@ -45,6 +44,15 @@ interface Employee {
   isLocked: boolean;
 }
 
+interface Attendance {
+  id: string;
+  attendanceDate: string;
+  status: string;
+  checkIn?: string;
+  checkOut?: string;
+  notes?: string;
+}
+
 function authHeader(): Record<string, string> {
   const token = localStorage.getItem("auth_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -53,10 +61,7 @@ function authHeader(): Record<string, string> {
 export default function Staff() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState("employees");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // Fetch employees
   const { data: employees, isLoading } = useQuery<Employee[]>({
@@ -81,33 +86,10 @@ export default function Staff() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="employees">
-            <Users className="h-4 w-4 mr-2" />
-            Staff List
-          </TabsTrigger>
-          <TabsTrigger value="attendance">
-            <Calendar className="h-4 w-4 mr-2" />
-            Attendance
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="employees" className="mt-4">
-          <StaffList 
-            employees={employees || []}
-            isLoading={isLoading}
-            onStaffLogin={(emp) => {
-              setSelectedEmployee(emp);
-              setShowLoginDialog(true);
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="attendance" className="mt-4">
-          <AttendanceView employees={employees || []} />
-        </TabsContent>
-      </Tabs>
+      <StaffListWithAttendance 
+        employees={employees || []}
+        isLoading={isLoading}
+      />
 
       {/* Add Staff Dialog - User can add but record gets locked after save */}
       <AddStaffDialog 
@@ -118,29 +100,22 @@ export default function Staff() {
           setShowAddDialog(false);
         }}
       />
-
-      {/* Staff Login Dialog */}
-      {selectedEmployee && (
-        <StaffLoginDialog
-          open={showLoginDialog}
-          onOpenChange={setShowLoginDialog}
-          employee={selectedEmployee}
-        />
-      )}
     </div>
   );
 }
 
-// Staff List Component (View Only for Users)
-function StaffList({ 
+// Staff List with Expandable Attendance inside each row
+function StaffListWithAttendance({ 
   employees, 
-  isLoading,
-  onStaffLogin
+  isLoading
 }: { 
   employees: Employee[];
   isLoading: boolean;
-  onStaffLogin: (emp: Employee) => void;
 }) {
+  const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
+  const [loginEmployee, setLoginEmployee] = useState<Employee | null>(null);
+  const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
+
   if (isLoading) {
     return <p className="text-muted-foreground">Loading...</p>;
   }
@@ -156,52 +131,272 @@ function StaffList({
   }
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3">Employee ID</th>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Phone</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">Working Since</th>
-                <th className="text-left p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.id} className="border-b hover:bg-muted/30">
-                  <td className="p-3 font-mono">{emp.employeeCode}</td>
-                  <td className="p-3">
-                    <button 
-                      onClick={() => onStaffLogin(emp)}
-                      className="text-primary hover:underline cursor-pointer"
-                    >
-                      {emp.fullName}
-                    </button>
-                  </td>
-                  <td className="p-3">{emp.phone || "-"}</td>
-                  <td className="p-3">
-                    <Badge variant={emp.status === "active" ? "default" : "secondary"}>
-                      {emp.status}
-                    </Badge>
-                  </td>
-                  <td className="p-3">{emp.dateJoined || "-"}</td>
-                  <td className="p-3">
-                    <Button size="sm" variant="outline" onClick={() => onStaffLogin(emp)}>
-                      <LogIn className="h-4 w-4 mr-1" />
-                      Login
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground px-2">
+            <span></span>
+            <span>Employee ID</span>
+            <span>Name</span>
+            <span>Phone</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div>
+            {employees.map((emp) => (
+              <EmployeeRowWithAttendance
+                key={emp.id}
+                employee={emp}
+                isExpanded={expandedEmployee === emp.id}
+                onToggle={() => setExpandedEmployee(expandedEmployee === emp.id ? null : emp.id)}
+                onLogin={() => setLoginEmployee(emp)}
+                onView={() => setViewEmployee(emp)}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Staff Login Dialog */}
+      {loginEmployee && (
+        <StaffLoginDialog
+          open={!!loginEmployee}
+          onOpenChange={(open) => !open && setLoginEmployee(null)}
+          employee={loginEmployee}
+        />
+      )}
+
+      {/* View Employee Dialog */}
+      {viewEmployee && (
+        <ViewEmployeeDialog
+          open={!!viewEmployee}
+          onOpenChange={(open) => !open && setViewEmployee(null)}
+          employee={viewEmployee}
+        />
+      )}
+    </>
+  );
+}
+
+// Individual Employee Row with Expandable Attendance
+function EmployeeRowWithAttendance({
+  employee,
+  isExpanded,
+  onToggle,
+  onLogin,
+  onView
+}: {
+  employee: Employee;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onLogin: () => void;
+  onView: () => void;
+}) {
+  const [startDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Fetch attendance for this employee when expanded
+  const { data: attendance, isLoading: attendanceLoading } = useQuery<Attendance[]>({
+    queryKey: ["attendance", employee.id, startDate, endDate],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/staff/attendance/${employee.id}?startDate=${startDate}&endDate=${endDate}`,
+        { headers: authHeader() }
+      );
+      if (!res.ok) throw new Error("Failed to load");
+      return res.json();
+    },
+    enabled: isExpanded,
+  });
+
+  return (
+    <div className="border-b last:border-b-0">
+      {/* Main Row */}
+      <div className="flex items-center p-3 hover:bg-muted/30">
+        <button onClick={onToggle} className="mr-2 p-1 hover:bg-muted rounded">
+          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        
+        <div className="flex-1 grid grid-cols-5 gap-4 items-center">
+          <span className="font-mono text-sm">{employee.employeeCode}</span>
+          <span className="font-medium">{employee.fullName}</span>
+          <span className="text-sm text-muted-foreground">{employee.phone || "-"}</span>
+          <Badge variant={employee.status === "active" ? "default" : "secondary"}>
+            {employee.status}
+          </Badge>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" onClick={onView} title="View Details">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={onLogin} title="Staff Login">
+              <LogIn className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Expanded Attendance Section */}
+      {isExpanded && (
+        <div className="px-4 py-3 bg-muted/20 border-t ml-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium text-sm">Recent Attendance (Last 7 days)</span>
+          </div>
+
+          {attendanceLoading ? (
+            <p className="text-sm text-muted-foreground">Loading attendance...</p>
+          ) : attendance && attendance.length > 0 ? (
+            <div className="overflow-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left py-2 px-3">Date</th>
+                    <th className="text-left py-2 px-3">Status</th>
+                    <th className="text-left py-2 px-3">Clock In</th>
+                    <th className="text-left py-2 px-3">Clock Out</th>
+                    <th className="text-left py-2 px-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.map((a) => (
+                    <tr key={a.id} className="border-b last:border-b-0">
+                      <td className="py-2 px-3">{a.attendanceDate}</td>
+                      <td className="py-2 px-3">
+                        <Badge 
+                          variant={a.status === "present" ? "default" : a.status === "absent" ? "destructive" : "secondary"}
+                        >
+                          {a.status}
+                        </Badge>
+                      </td>
+                      <td className="py-2 px-3">
+                        {a.checkIn ? new Date(a.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
+                      </td>
+                      <td className="py-2 px-3">
+                        {a.checkOut ? new Date(a.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
+                      </td>
+                      <td className="py-2 px-3 text-muted-foreground">{a.notes || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No attendance records found for the last 7 days.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// View Employee Dialog
+function ViewEmployeeDialog({
+  open,
+  onOpenChange,
+  employee
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employee: Employee;
+}) {
+  let idProofFiles: IdProofFile[] = [];
+  try {
+    idProofFiles = employee.idProofFiles ? JSON.parse(employee.idProofFiles) : [];
+  } catch (e) {
+    idProofFiles = [];
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Employee Details: {employee.employeeCode}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Full Name</Label>
+              <p className="font-medium">{employee.fullName}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Employee Code</Label>
+              <p className="font-mono">{employee.employeeCode}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Phone</Label>
+              <p>{employee.phone || "-"}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Alternate Phone</Label>
+              <p>{employee.alternatePhone || "-"}</p>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-muted-foreground text-xs">Address</Label>
+            <p>{employee.address || "-"}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Role</Label>
+              <Badge variant="outline">{employee.role}</Badge>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Status</Label>
+              <Badge variant={employee.status === "active" ? "default" : "secondary"}>
+                {employee.status}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Date Joined</Label>
+              <p>{employee.dateJoined || "-"}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Salary</Label>
+              <p>{employee.salary ? `₹${employee.salary}` : "-"}</p>
+            </div>
+          </div>
+
+          {idProofFiles.length > 0 && (
+            <div>
+              <Label className="text-muted-foreground text-xs">ID Proof Documents</Label>
+              <div className="mt-2 space-y-2">
+                {idProofFiles.map((file) => (
+                  <a
+                    key={file.id}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 bg-muted rounded hover:bg-muted/80 text-sm"
+                  >
+                    {file.mimetype?.includes("image") ? (
+                      <Image className="h-4 w-4" />
+                    ) : (
+                      <FileText className="h-4 w-4" />
+                    )}
+                    <span className="truncate">{file.originalName}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -469,10 +664,10 @@ function AddStaffDialog({
                   accept=".pdf,.jpg,.jpeg,.png,.docx"
                   onChange={handleFileUpload}
                   className="hidden"
-                  id="id-proof-upload"
+                  id="id-proof-upload-user"
                   disabled={isUploading || uploadedFiles.length >= 5}
                 />
-                <label htmlFor="id-proof-upload" className="cursor-pointer">
+                <label htmlFor="id-proof-upload-user" className="cursor-pointer">
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">
                     {isUploading ? "Uploading..." : "Click to upload files"}
@@ -484,7 +679,7 @@ function AddStaffDialog({
                   {uploadedFiles.map((file) => (
                     <div key={file.id} className="flex items-center justify-between p-2 bg-muted rounded">
                       <div className="flex items-center gap-2">
-                        {file.mimetype.includes("image") ? (
+                        {file.mimetype?.includes("image") ? (
                           <Image className="h-4 w-4" />
                         ) : (
                           <FileText className="h-4 w-4" />
@@ -577,7 +772,6 @@ function StaffLoginDialog({
 
   useEffect(() => {
     if (open && loggedIn) {
-      // Fetch today's attendance
       fetchTodayAttendance();
     }
   }, [open, loggedIn]);
@@ -641,6 +835,7 @@ function StaffLoginDialog({
       toast({ title: "Clocked in successfully!" });
       fetchTodayAttendance();
       qc.invalidateQueries({ queryKey: ["activeEmployees"] });
+      qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     }
@@ -661,6 +856,7 @@ function StaffLoginDialog({
       toast({ title: "Clocked out successfully!" });
       fetchTodayAttendance();
       qc.invalidateQueries({ queryKey: ["activeEmployees"] });
+      qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     }
@@ -714,7 +910,10 @@ function StaffLoginDialog({
 
             {/* Today's Status */}
             <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-2">Today's Attendance</h3>
+              <h3 className="font-medium mb-2 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Today's Attendance
+              </h3>
               {todayAttendance ? (
                 <div className="space-y-2 text-sm">
                   <p>
@@ -746,7 +945,7 @@ function StaffLoginDialog({
               <Button 
                 className="flex-1" 
                 onClick={handleClockIn}
-                disabled={todayAttendance?.checkIn && !todayAttendance?.checkOut === false}
+                disabled={todayAttendance?.checkIn && !todayAttendance?.checkOut}
               >
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Start Work
@@ -771,114 +970,5 @@ function StaffLoginDialog({
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-// Attendance View Component for Users
-function AttendanceView({ employees }: { employees: Employee[] }) {
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [startDate, setStartDate] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 7);
-    return date.toISOString().split('T')[0];
-  });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
-
-  const { data: attendance, isLoading } = useQuery({
-    queryKey: ["attendance", selectedEmployee?.id, startDate, endDate],
-    queryFn: async () => {
-      if (!selectedEmployee) return [];
-      const res = await fetch(
-        `/api/staff/attendance/${selectedEmployee.id}?startDate=${startDate}&endDate=${endDate}`,
-        { headers: authHeader() }
-      );
-      if (!res.ok) throw new Error("Failed to load");
-      return res.json();
-    },
-    enabled: !!selectedEmployee,
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>View Attendance</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-4">
-          <Select 
-            value={selectedEmployee?.id || ""} 
-            onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Employee" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id}>{emp.fullName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-2">
-            <Input 
-              type="date" 
-              value={startDate} 
-              onChange={(e) => setStartDate(e.target.value)} 
-              className="w-40"
-            />
-            <span className="text-muted-foreground">to</span>
-            <Input 
-              type="date" 
-              value={endDate} 
-              onChange={(e) => setEndDate(e.target.value)} 
-              className="w-40"
-            />
-          </div>
-        </div>
-
-        {!selectedEmployee ? (
-          <p className="text-muted-foreground text-center py-8">Select an employee to view attendance</p>
-        ) : isLoading ? (
-          <p className="text-muted-foreground">Loading...</p>
-        ) : attendance && attendance.length > 0 ? (
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 pr-4">Date</th>
-                  <th className="text-left py-2 pr-4">Status</th>
-                  <th className="text-left py-2 pr-4">Clock In</th>
-                  <th className="text-left py-2 pr-4">Clock Out</th>
-                  <th className="text-left py-2 pr-4">Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendance.map((a: any) => (
-                  <tr key={a.id} className="border-b">
-                    <td className="py-2 pr-4">{a.attendanceDate}</td>
-                    <td className="py-2 pr-4">
-                      <Badge 
-                        variant={a.status === "present" ? "default" : a.status === "absent" ? "destructive" : "secondary"}
-                      >
-                        {a.status}
-                      </Badge>
-                    </td>
-                    <td className="py-2 pr-4">
-                      {a.checkIn ? new Date(a.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
-                    </td>
-                    <td className="py-2 pr-4">
-                      {a.checkOut ? new Date(a.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
-                    </td>
-                    <td className="py-2 pr-4">{a.notes || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-4">No attendance records found</p>
-        )}
-      </CardContent>
-    </Card>
   );
 }

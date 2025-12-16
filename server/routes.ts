@@ -1402,20 +1402,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existing = await storage.getEmployee(id);
       if (!existing) return res.status(404).json({ message: "Employee not found" });
       
-      // Create audit log before deletion
-      await storage.createAuditLog({
-        employeeId: id,
-        action: 'delete',
-        changedBy: user?.userId || 'unknown',
-        changedByRole: user?.role || 'unknown',
-        previousData: JSON.stringify(existing),
-        ipAddress: req.ip || null,
-      });
-      
+      // Delete employee (audit log will be deleted via CASCADE, which is expected)
       const ok = await storage.deleteEmployee(id);
       if (!ok) return res.status(404).json({ message: "Employee not found" });
+      
+      // Log to console for audit trail (since DB audit log is deleted with CASCADE)
+      console.log(`[AUDIT] Employee deleted: ${existing.employeeCode} (${existing.fullName}) by ${user?.userId || 'unknown'} at ${new Date().toISOString()}`);
+      
       res.json({ success: true });
     } catch (error) {
+      console.error("Delete employee error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
