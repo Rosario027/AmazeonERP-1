@@ -98,6 +98,9 @@ export interface IStorage {
     todayExpenses: number;
     weekExpenses: number;
     monthExpenses: number;
+    todayQuantity: number;
+    weekQuantity: number;
+    monthQuantity: number;
   }>;
   // Finance
   getCashBalance(userId: string, date: string): Promise<CashBalance | undefined>;
@@ -483,6 +486,9 @@ export class DatabaseStorage implements IStorage {
     todayExpenses: number;
     weekExpenses: number;
     monthExpenses: number;
+    todayQuantity: number;
+    weekQuantity: number;
+    monthQuantity: number;
   }> {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -519,6 +525,25 @@ export class DatabaseStorage implements IStorage {
       .from(expenses)
       .where(and(gte(expenses.createdAt, monthStart), isNull(expenses.deletedAt)));
 
+    // Quantity sold stats - join invoice_items with invoices
+    const [todayQuantityResult] = await db
+      .select({ total: sql<string>`COALESCE(SUM(${invoiceItems.quantity}), 0)` })
+      .from(invoiceItems)
+      .innerJoin(invoices, eq(invoiceItems.invoiceId, invoices.id))
+      .where(and(gte(invoices.createdAt, todayStart), isNull(invoices.deletedAt)));
+
+    const [weekQuantityResult] = await db
+      .select({ total: sql<string>`COALESCE(SUM(${invoiceItems.quantity}), 0)` })
+      .from(invoiceItems)
+      .innerJoin(invoices, eq(invoiceItems.invoiceId, invoices.id))
+      .where(and(gte(invoices.createdAt, weekStart), isNull(invoices.deletedAt)));
+
+    const [monthQuantityResult] = await db
+      .select({ total: sql<string>`COALESCE(SUM(${invoiceItems.quantity}), 0)` })
+      .from(invoiceItems)
+      .innerJoin(invoices, eq(invoiceItems.invoiceId, invoices.id))
+      .where(and(gte(invoices.createdAt, monthStart), isNull(invoices.deletedAt)));
+
     return {
       todaySales: parseFloat(todaySalesResult?.total || "0"),
       weekSales: parseFloat(weekSalesResult?.total || "0"),
@@ -526,6 +551,9 @@ export class DatabaseStorage implements IStorage {
       todayExpenses: parseFloat(todayExpensesResult?.total || "0"),
       weekExpenses: parseFloat(weekExpensesResult?.total || "0"),
       monthExpenses: parseFloat(monthExpensesResult?.total || "0"),
+      todayQuantity: parseInt(todayQuantityResult?.total || "0", 10),
+      weekQuantity: parseInt(weekQuantityResult?.total || "0", 10),
+      monthQuantity: parseInt(monthQuantityResult?.total || "0", 10),
     };
   }
 

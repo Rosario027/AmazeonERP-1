@@ -707,6 +707,18 @@ function EditStaffDialog({
     salary: employee.salary || "",
   });
 
+  // Parse existing files
+  const parseExistingFiles = (): IdProofFile[] => {
+    try {
+      return employee.idProofFiles ? JSON.parse(employee.idProofFiles) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const [uploadedFiles, setUploadedFiles] = useState<IdProofFile[]>(parseExistingFiles);
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     setFormData({
       firstName: employee.firstName || "",
@@ -720,11 +732,65 @@ function EditStaffDialog({
       status: employee.status,
       salary: employee.salary || "",
     });
+    setUploadedFiles(parseExistingFiles());
   }, [employee]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (uploadedFiles.length + files.length > 5) {
+      toast({ title: "Maximum 5 files allowed", variant: "destructive" });
+      return;
+    }
+
+    const totalSize = uploadedFiles.reduce((sum, f) => sum + f.size, 0) + 
+      Array.from(files).reduce((sum, f) => sum + f.size, 0);
+    if (totalSize > 5 * 1024 * 1024) {
+      toast({ title: "Total file size must not exceed 5MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    const formDataUpload = new FormData();
+    Array.from(files).forEach(f => formDataUpload.append("files", f));
+
+    try {
+      const res = await fetch("/api/staff/files/upload", {
+        method: "POST",
+        headers: authHeader(),
+        body: formDataUpload,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setUploadedFiles(prev => [...prev, ...data.files]);
+      toast({ title: "Files uploaded" });
+    } catch (error) {
+      toast({ title: "Failed to upload files", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removeFile = async (filename: string) => {
+    try {
+      await fetch(`/api/staff/files/${filename}`, {
+        method: "DELETE",
+        headers: authHeader(),
+      });
+      setUploadedFiles(prev => prev.filter(f => f.filename !== filename));
+    } catch (error) {
+      setUploadedFiles(prev => prev.filter(f => f.filename !== filename));
+    }
+  };
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const payload: any = { ...formData };
+      const payload: any = { 
+        ...formData,
+        idProofFiles: uploadedFiles,
+      };
       if (!payload.password) delete payload.password;
       
       const res = await fetch(`/api/staff/employees/${employee.id}`, {
@@ -749,7 +815,7 @@ function EditStaffDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Employee: {employee.employeeCode}</DialogTitle>
         </DialogHeader>
@@ -840,6 +906,70 @@ function EditStaffDialog({
             </div>
           </div>
 
+          {/* ID Proof Documents Section */}
+          <div>
+            <Label>ID Proof Documents</Label>
+            <div className="mt-2">
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {uploadedFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                      <div className="flex items-center gap-2">
+                        {file.mimetype?.includes("image") ? (
+                          <Image className="h-4 w-4" />
+                        ) : (
+                          <FileText className="h-4 w-4" />
+                        )}
+                        <a 
+                          href={file.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm hover:underline"
+                        >
+                          {file.originalName}
+                        </a>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(file.filename)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {uploadedFiles.length < 5 && (
+                <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                  <input
+                    type="file"
+                    id="edit-file-upload"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.docx"
+                    multiple
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                  />
+                  <label
+                    htmlFor="edit-file-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {isUploading ? "Uploading..." : "Click to upload (PDF, JPG, PNG, DOCX)"}
+                    </span>
+                  </label>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Max 5 files, 5MB total
+              </p>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -864,7 +994,13 @@ function ViewStaffDialog({
   onOpenChange: (open: boolean) => void;
   employee: Employee;
 }) {
-  const idProofFiles: IdProofFile[] = employee.idProofFiles ? JSON.parse(employee.idProofFiles) : [];
+  let idProofFiles: IdProofFile[] = [];
+  try {
+    idProofFiles = employee.idProofFiles ? JSON.parse(employee.idProofFiles) : [];
+  } catch (e) {
+    console.error("Failed to parse idProofFiles:", e, employee.idProofFiles);
+    idProofFiles = [];
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -957,12 +1093,16 @@ function ViewStaffDialog({
   );
 }
 
-// Attendance Calendar Component
+// Attendance Calendar Component with Manual Editing
 function AttendanceCalendar({ employees }: { employees: Employee[] }) {
+  const qc = useQueryClient();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [editingDay, setEditingDay] = useState<{ day: number; date: string } | null>(null);
+  const [editStatus, setEditStatus] = useState<string>("present");
+  const [editNotes, setEditNotes] = useState<string>("");
 
-  const { data: attendance } = useQuery({
+  const { data: attendance, refetch } = useQuery({
     queryKey: ["attendance", selectedEmployee?.id, currentMonth.toISOString()],
     queryFn: async () => {
       if (!selectedEmployee) return [];
@@ -976,6 +1116,31 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
       return res.json();
     },
     enabled: !!selectedEmployee,
+  });
+
+  const updateAttendanceMutation = useMutation({
+    mutationFn: async ({ employeeId, date, status, notes }: { employeeId: string; date: string; status: string; notes: string }) => {
+      const res = await fetch("/api/staff/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({
+          employeeId,
+          attendanceDate: date,
+          status,
+          notes: notes || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Attendance updated successfully" });
+      refetch();
+      setEditingDay(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to update attendance", variant: "destructive" });
+    }
   });
 
   const getDaysInMonth = () => {
@@ -992,8 +1157,27 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
     return attendance.find((a: any) => a.attendanceDate === dateStr);
   };
 
+  const handleDayClick = (day: number) => {
+    if (!selectedEmployee) return;
+    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const existing = getAttendanceForDay(day);
+    setEditStatus(existing?.status || "present");
+    setEditNotes(existing?.notes || "");
+    setEditingDay({ day, date: dateStr });
+  };
+
+  const handleSaveAttendance = () => {
+    if (!selectedEmployee || !editingDay) return;
+    updateAttendanceMutation.mutate({
+      employeeId: selectedEmployee.id,
+      date: editingDay.date,
+      status: editStatus,
+      notes: editNotes,
+    });
+  };
+
   const { daysInMonth, firstDay } = getDaysInMonth();
-  const days = [];
+  const days: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
@@ -1005,7 +1189,10 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Attendance Calendar</CardTitle>
+          <div>
+            <CardTitle>Attendance Calendar</CardTitle>
+            <CardDescription>Click on any day to set attendance status</CardDescription>
+          </div>
           <Select 
             value={selectedEmployee?.id || ""} 
             onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
@@ -1023,7 +1210,7 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
       </CardHeader>
       <CardContent>
         {!selectedEmployee ? (
-          <p className="text-muted-foreground text-center py-8">Select an employee to view attendance</p>
+          <p className="text-muted-foreground text-center py-8">Select an employee to view and edit attendance</p>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
@@ -1052,15 +1239,18 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
               ))}
               {days.map((day, idx) => {
                 const att = day ? getAttendanceForDay(day) : null;
+                const isEditing = editingDay?.day === day;
                 return (
                   <div
                     key={idx}
-                    className={`p-2 text-sm rounded ${
+                    onClick={() => day && handleDayClick(day)}
+                    className={`p-2 text-sm rounded cursor-pointer transition-all ${
                       !day ? '' :
-                      att?.status === 'present' ? 'bg-green-100 text-green-800' :
-                      att?.status === 'absent' ? 'bg-red-100 text-red-800' :
-                      att?.status === 'half-day' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-muted/30'
+                      isEditing ? 'ring-2 ring-primary' :
+                      att?.status === 'present' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                      att?.status === 'absent' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                      att?.status === 'half-day' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                      'bg-muted/30 hover:bg-muted/50'
                     }`}
                   >
                     {day && (
@@ -1068,7 +1258,7 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
                         <span className="font-medium">{day}</span>
                         {att && (
                           <div className="text-xs mt-1">
-                            {att.checkIn && new Date(att.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {att.status === 'present' ? 'P' : att.status === 'absent' ? 'A' : 'H'}
                           </div>
                         )}
                       </div>
@@ -1078,18 +1268,58 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
               })}
             </div>
 
+            {/* Edit Panel */}
+            {editingDay && (
+              <div className="mt-4 p-4 border rounded-lg bg-muted/20">
+                <h4 className="font-medium mb-3">
+                  Edit Attendance for {editingDay.date}
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={editStatus} onValueChange={setEditStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="present">Present</SelectItem>
+                        <SelectItem value="absent">Absent</SelectItem>
+                        <SelectItem value="half-day">Half Day</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Notes (optional)</Label>
+                    <Input
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Add notes..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveAttendance} disabled={updateAttendanceMutation.isPending}>
+                      {updateAttendanceMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingDay(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-4 mt-4 text-sm">
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-green-100 rounded" />
-                <span>Present</span>
+                <span>Present (P)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-red-100 rounded" />
-                <span>Absent</span>
+                <span>Absent (A)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-yellow-100 rounded" />
-                <span>Half Day</span>
+                <span>Half Day (H)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-muted/30 rounded" />

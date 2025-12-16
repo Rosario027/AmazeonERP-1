@@ -827,17 +827,18 @@ function StaffLoginDialog({
         headers: authHeader(),
       });
 
+      const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Clock in failed");
+        throw new Error(data.message || "Clock in failed");
       }
 
       toast({ title: "Clocked in successfully!" });
-      fetchTodayAttendance();
+      await fetchTodayAttendance();
       qc.invalidateQueries({ queryKey: ["activeEmployees"] });
       qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
-      toast({ title: error.message, variant: "destructive" });
+      toast({ title: error.message || "Failed to clock in", variant: "destructive" });
     }
   };
 
@@ -847,18 +848,19 @@ function StaffLoginDialog({
         method: "POST",
         headers: authHeader(),
       });
+      
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Clock out failed");
+        throw new Error(data.message || "Clock out failed");
       }
 
       toast({ title: "Clocked out successfully!" });
-      fetchTodayAttendance();
+      await fetchTodayAttendance();
       qc.invalidateQueries({ queryKey: ["activeEmployees"] });
       qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
-      toast({ title: error.message, variant: "destructive" });
+      toast({ title: error.message || "Failed to clock out", variant: "destructive" });
     }
   };
 
