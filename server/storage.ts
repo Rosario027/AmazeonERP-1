@@ -706,6 +706,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(payload: NewEmployee): Promise<Employee> {
     const [row] = await db.insert(employees).values(payload).returning();
+    if (!row) {
+      throw new Error("Failed to create employee - no record returned");
+    }
     return row;
   }
 
@@ -723,6 +726,9 @@ export class DatabaseStorage implements IStorage {
   // Staff Audit Log
   async createAuditLog(payload: NewStaffAuditLog): Promise<StaffAuditLog> {
     const [row] = await db.insert(staffAuditLog).values(payload).returning();
+    if (!row) {
+      throw new Error("Failed to create audit log - no record returned");
+    }
     return row;
   }
 
