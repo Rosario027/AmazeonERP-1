@@ -769,11 +769,14 @@ function StaffLoginDialog({
   const [loggedIn, setLoggedIn] = useState(false);
   const [staffToken, setStaffToken] = useState<string | null>(null);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [isClockingIn, setIsClockingIn] = useState(false);
+  const [isClockingOut, setIsClockingOut] = useState(false);
   const qc = useQueryClient();
 
   // Get auth header - use staff token if logged in as staff, otherwise use admin token
-  const getStaffAuthHeader = (): Record<string, string> => {
-    const token = staffToken || localStorage.getItem("auth_token");
+  // Can pass token directly for immediate use after login (before state updates)
+  const getStaffAuthHeader = (tokenOverride?: string): Record<string, string> => {
+    const token = tokenOverride || staffToken || localStorage.getItem("auth_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -783,10 +786,10 @@ function StaffLoginDialog({
     }
   }, [open, loggedIn]);
 
-  const fetchTodayAttendance = async () => {
+  const fetchTodayAttendance = async (tokenOverride?: string) => {
     try {
       const res = await fetch(`/api/staff/attendance/today/${employee.id}`, {
-        headers: getStaffAuthHeader(),
+        headers: getStaffAuthHeader(tokenOverride),
       });
       if (res.ok) {
         const data = await res.json();
@@ -818,12 +821,14 @@ function StaffLoginDialog({
 
       const data = await res.json();
       // Store the staff token for subsequent requests
-      if (data.token) {
-        setStaffToken(data.token);
+      const newToken = data.token;
+      if (newToken) {
+        setStaffToken(newToken);
       }
       toast({ title: `Welcome, ${data.employee.fullName}!` });
       setLoggedIn(true);
-      fetchTodayAttendance();
+      // Pass token directly since state may not have updated yet
+      fetchTodayAttendance(newToken);
     } catch (error: any) {
       toast({ title: error.message, variant: "destructive" });
     } finally {
@@ -832,6 +837,16 @@ function StaffLoginDialog({
   };
 
   const handleClockIn = async () => {
+    // Prevent double clicks
+    if (isClockingIn) return;
+    
+    // Check if already clocked in
+    if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
+      toast({ title: "Already clocked in for today", variant: "destructive" });
+      return;
+    }
+    
+    setIsClockingIn(true);
     try {
       const res = await fetch(`/api/staff/clock-in/${employee.id}`, {
         method: "POST",
@@ -850,10 +865,26 @@ function StaffLoginDialog({
       qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
       toast({ title: error.message || "Failed to clock in", variant: "destructive" });
+    } finally {
+      setIsClockingIn(false);
     }
   };
 
   const handleClockOut = async () => {
+    // Prevent double clicks
+    if (isClockingOut) return;
+    
+    // Check if can clock out
+    if (!todayAttendance?.checkIn) {
+      toast({ title: "Please clock in first", variant: "destructive" });
+      return;
+    }
+    if (todayAttendance?.checkOut) {
+      toast({ title: "Already clocked out for today", variant: "destructive" });
+      return;
+    }
+    
+    setIsClockingOut(true);
     try {
       const res = await fetch(`/api/staff/clock-out/${employee.id}`, {
         method: "POST",
@@ -872,6 +903,8 @@ function StaffLoginDialog({
       qc.invalidateQueries({ queryKey: ["attendance", employee.id] });
     } catch (error: any) {
       toast({ title: error.message || "Failed to clock out", variant: "destructive" });
+    } finally {
+      setIsClockingOut(false);
     }
   };
 
@@ -881,6 +914,8 @@ function StaffLoginDialog({
     setLoggedIn(false);
     setStaffToken(null);
     setTodayAttendance(null);
+    setIsClockingIn(false);
+    setIsClockingOut(false);
     onOpenChange(false);
   };
 
@@ -959,19 +994,19 @@ function StaffLoginDialog({
               <Button 
                 className="flex-1" 
                 onClick={handleClockIn}
-                disabled={todayAttendance?.checkIn && !todayAttendance?.checkOut}
+                disabled={isClockingIn || (todayAttendance?.checkIn && !todayAttendance?.checkOut)}
               >
                 <PlayCircle className="h-4 w-4 mr-2" />
-                Start Work
+                {isClockingIn ? "Starting..." : "Start Work"}
               </Button>
               <Button 
                 className="flex-1" 
                 variant="secondary"
                 onClick={handleClockOut}
-                disabled={!todayAttendance?.checkIn || todayAttendance?.checkOut}
+                disabled={isClockingOut || !todayAttendance?.checkIn || todayAttendance?.checkOut}
               >
                 <StopCircle className="h-4 w-4 mr-2" />
-                End Work
+                {isClockingOut ? "Ending..." : "End Work"}
               </Button>
             </div>
 
