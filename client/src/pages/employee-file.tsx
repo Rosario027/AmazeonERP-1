@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Edit, Save, X } from "lucide-react";
+import { Edit, Save, X, Filter, ArrowUpDown } from "lucide-react";
 
 function authHeader(): Record<string, string> {
   const token = localStorage.getItem("auth_token");
@@ -31,6 +31,11 @@ export default function EmployeeFile() {
     status: "",
     salary: "",
   });
+  
+  // Filter and sort state for Credit Purchases / Advances
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [sortField, setSortField] = useState<string>("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const employeeQuery = useQuery<any>({
     queryKey: ["employee", employeeId],
@@ -119,8 +124,36 @@ export default function EmployeeFile() {
   const employee = employeeQuery.data;
   const attendance = attendanceQuery.data || [];
   const purchases = purchasesQuery.data || [];
-  const creditPurchases = purchases.filter((p) => (p.paymentMode || '').toLowerCase() === 'credit');
-  const creditTotal = creditPurchases.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  
+  // Filter for credit purchases and advances
+  const creditAndAdvances = purchases.filter((p) => {
+    const paymentMode = (p.paymentMode || '').toLowerCase();
+    const category = (p.category || '').toLowerCase();
+    return paymentMode === 'credit' || category === 'advance';
+  });
+  
+  // Apply category filter
+  const filteredPurchases = creditAndAdvances.filter((p) => {
+    if (filterCategory === "all") return true;
+    if (filterCategory === "credit") return (p.paymentMode || '').toLowerCase() === 'credit' && (p.category || '').toLowerCase() !== 'advance';
+    if (filterCategory === "advance") return (p.category || '').toLowerCase() === 'advance';
+    return true;
+  });
+  
+  // Apply sorting
+  const sortedPurchases = [...filteredPurchases].sort((a, b) => {
+    let comparison = 0;
+    if (sortField === "date") {
+      comparison = new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime();
+    } else if (sortField === "amount") {
+      comparison = Number(a.amount) - Number(b.amount);
+    } else if (sortField === "category") {
+      comparison = (a.category || '').localeCompare(b.category || '');
+    }
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+  
+  const creditTotal = creditAndAdvances.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
   const presentDays = attendance.filter((a) => a.status === 'present').length;
 
   const handleCancel = () => {
@@ -339,46 +372,99 @@ export default function EmployeeFile() {
             </CardContent>
           </Card>
 
-          {/* Credit Purchases */}
+          {/* Credit Purchases / Advances */}
           <Card>
             <CardHeader>
-              <CardTitle>Credit Purchases</CardTitle>
+              <CardTitle>Credit Purchases / Advances</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-muted-foreground">All purchases recorded with payment mode = Credit</p>
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+                <p className="text-sm text-muted-foreground">All credit purchases and salary advances</p>
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground">Total Outstanding</div>
                   <div className="text-lg font-semibold">₹{creditTotal.toFixed(2)}</div>
                 </div>
               </div>
+              
+              {/* Filters and Sort */}
+              <div className="flex flex-wrap gap-3 mb-4 p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm">Filter:</Label>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="credit">Credit Only</SelectItem>
+                      <SelectItem value="advance">Advances Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm">Sort by:</Label>
+                  <Select value={sortField} onValueChange={setSortField}>
+                    <SelectTrigger className="w-[120px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="amount">Amount</SelectItem>
+                      <SelectItem value="category">Category</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2"
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  >
+                    {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
+                  </Button>
+                </div>
+              </div>
+              
               {purchasesQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading purchases...</p>
-              ) : creditPurchases.length > 0 ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : sortedPurchases.length > 0 ? (
                 <div className="overflow-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
                         <th className="text-left py-2 px-3">Date</th>
+                        <th className="text-left py-2 px-3">Type</th>
                         <th className="text-left py-2 px-3">Category</th>
                         <th className="text-left py-2 px-3">Amount</th>
                         <th className="text-left py-2 px-3">Description</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {creditPurchases.map((p: any) => (
-                        <tr key={p.id} className="border-b last:border-b-0">
-                          <td className="py-2 px-3">{p.purchaseDate}</td>
-                          <td className="py-2 px-3">{p.category}</td>
-                          <td className="py-2 px-3">₹{Number(p.amount).toFixed(2)}</td>
-                          <td className="py-2 px-3 text-muted-foreground">{p.description || '-'}</td>
-                        </tr>
-                      ))}
+                      {sortedPurchases.map((p: any) => {
+                        const isAdvance = (p.category || '').toLowerCase() === 'advance';
+                        return (
+                          <tr key={p.id} className="border-b last:border-b-0">
+                            <td className="py-2 px-3">{p.purchaseDate}</td>
+                            <td className="py-2 px-3">
+                              <Badge variant={isAdvance ? 'secondary' : 'destructive'}>
+                                {isAdvance ? 'Advance' : 'Credit'}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3">{p.category}</td>
+                            <td className="py-2 px-3 font-medium">₹{Number(p.amount).toFixed(2)}</td>
+                            <td className="py-2 px-3 text-muted-foreground">{p.description || '-'}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                  <div className="mt-3 text-sm text-muted-foreground">
+                    Showing {sortedPurchases.length} of {creditAndAdvances.length} records
+                  </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No credit purchases recorded.</p>
+                <p className="text-sm text-muted-foreground">No credit purchases or advances recorded.</p>
               )}
             </CardContent>
           </Card>
