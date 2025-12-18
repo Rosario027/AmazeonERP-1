@@ -1671,7 +1671,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!employeeId || !purchaseDate || !category || amount === undefined) {
-        return res.status(400).json({ message: "Missing required fields" });
+        console.log("Missing fields:", { employeeId, purchaseDate, category, amount, requester });
+        return res.status(400).json({ message: "Missing required fields: employeeId, purchaseDate, category, amount are required" });
       }
 
       // Only admins or the staff themselves can create
@@ -1684,14 +1685,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         employeeId,
         purchaseDate,
         category,
-        amount,
+        amount: String(amount),
         paymentMode: normalizedMode,
         description: description || null,
         recordedBy: requester?.userId || requester?.employeeId || null,
       } as any);
       res.status(201).json(row);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
+    } catch (error: any) {
+      console.error("Create purchase error:", error);
+      res.status(500).json({ message: error.message || "Server error" });
     }
   });
 

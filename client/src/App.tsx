@@ -22,6 +22,7 @@ import NotFound from "@/pages/not-found";
 import Finance from "@/pages/finance";
 import AdminFinance from "@/pages/admin-finance";
 import Staff from "@/pages/staff";
+import StaffLogin from "@/pages/staff-login";
 import AdminStaff from "@/pages/admin-staff";
 import EmployeeFile from "@/pages/employee-file";
 
@@ -121,6 +122,9 @@ function renderMainApp(user: any) {
               </Route>
               <Route path="/staff">
                 {() => <ProtectedRoute component={Staff} />}
+              </Route>
+              <Route path="/staff-login/:id">
+                {() => <ProtectedRoute component={StaffLogin} />}
               </Route>
               <Route path="/">
                 {() => user.role === "admin" ? <Redirect to="/admin/dashboard" /> : <Redirect to="/create-invoice" />}
