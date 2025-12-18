@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -303,6 +304,11 @@ function StaffList({
                   <td className="p-3">{emp.dateJoined || "-"}</td>
                   <td className="p-3">
                     <div className="flex gap-1">
+                      <Link href={`/admin/employee-file/${emp.id}`}>
+                        <Button size="sm" variant="ghost" title="Open Employee File">
+                          File
+                        </Button>
+                      </Link>
                       <Button size="sm" variant="ghost" onClick={() => onView(emp)}>
                         <Eye className="h-4 w-4" />
                       </Button>

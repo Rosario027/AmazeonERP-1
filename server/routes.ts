@@ -1657,18 +1657,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/staff/purchases", authMiddleware, adminMiddleware, async (req, res) => {
+  app.post("/api/staff/purchases", authMiddleware, async (req, res) => {
     try {
-      const { employeeId, purchaseDate, category, amount, paymentMode, description } = req.body;
-      if (!employeeId || !purchaseDate || !category || amount === undefined) return res.status(400).json({ message: "Missing required fields" });
+      const requester = (req as any).user;
+      const isAdmin = requester?.role === "admin";
+      const isStaff = requester?.role === "staff";
+
+      let { employeeId, purchaseDate, category, amount, paymentMode, description } = req.body;
+
+      // If staff, restrict creation to their own employeeId
+      if (isStaff) {
+        employeeId = requester?.employeeId;
+      }
+
+      if (!employeeId || !purchaseDate || !category || amount === undefined) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Only admins or the staff themselves can create
+      if (!isAdmin && !isStaff) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const normalizedMode = (paymentMode || "cash").toString().trim().toLowerCase();
       const row = await storage.createEmployeePurchase({
         employeeId,
         purchaseDate,
         category,
         amount,
-        paymentMode: paymentMode || "cash",
+        paymentMode: normalizedMode,
         description: description || null,
-        recordedBy: (req as any).user?.userId || null,
+        recordedBy: requester?.userId || requester?.employeeId || null,
       } as any);
       res.status(201).json(row);
     } catch (error) {

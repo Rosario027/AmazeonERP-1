@@ -23,6 +23,7 @@ import Finance from "@/pages/finance";
 import AdminFinance from "@/pages/admin-finance";
 import Staff from "@/pages/staff";
 import AdminStaff from "@/pages/admin-staff";
+import EmployeeFile from "@/pages/employee-file";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: any; adminOnly?: boolean }) {
   const { user } = useAuth();
@@ -111,6 +112,9 @@ function renderMainApp(user: any) {
               </Route>
               <Route path="/admin/staff">
                 {() => <ProtectedRoute component={AdminStaff} adminOnly />}
+              </Route>
+              <Route path="/admin/employee-file/:id">
+                {() => <ProtectedRoute component={EmployeeFile} adminOnly />}
               </Route>
               <Route path="/finance">
                 {() => <ProtectedRoute component={Finance} />}

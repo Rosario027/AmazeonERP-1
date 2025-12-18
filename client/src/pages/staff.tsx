@@ -365,10 +365,6 @@ function ViewEmployeeDialog({
               <Label className="text-muted-foreground text-xs">Date Joined</Label>
               <p>{employee.dateJoined || "-"}</p>
             </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Salary</Label>
-              <p>{employee.salary ? `₹${employee.salary}` : "-"}</p>
-            </div>
           </div>
 
           {idProofFiles.length > 0 && (
@@ -422,7 +418,6 @@ function AddStaffDialog({
     confirmPassword: "",
     role: "staff",
     status: "active",
-    salary: "",
   });
   const [uploadedFiles, setUploadedFiles] = useState<IdProofFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -476,7 +471,6 @@ function AddStaffDialog({
       confirmPassword: "",
       role: "staff",
       status: "active",
-      salary: "",
     });
     setUploadedFiles([]);
   };
@@ -651,15 +645,6 @@ function AddStaffDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Salary</Label>
-                <Input
-                  type="number"
-                  value={formData.salary}
-                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                  placeholder="Monthly salary"
-                />
-              </div>
             </div>
 
             {/* ID Proof Upload */}
@@ -779,6 +764,14 @@ function StaffLoginDialog({
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [purchaseForm, setPurchaseForm] = useState({
+    purchaseDate: new Date().toISOString().split('T')[0],
+    category: "",
+    amount: "",
+    paymentMode: "cash",
+    description: "",
+  });
   const qc = useQueryClient();
   
   // Use ref to store token so it's always current in callbacks
@@ -789,6 +782,57 @@ function StaffLoginDialog({
     const token = staffTokenRef.current || localStorage.getItem("auth_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+  // Staff purchases list
+  const purchasesQuery = useQuery<any[]>({
+    queryKey: ["employee-purchases", employee.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/staff/purchases/${employee.id}`, {
+        headers: getStaffAuthHeader(),
+      });
+      if (!res.ok) throw new Error("Failed to load purchases");
+      return res.json();
+    },
+    enabled: open && loggedIn,
+  });
+
+  const createPurchase = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        purchaseDate: purchaseForm.purchaseDate,
+        category: purchaseForm.category,
+        amount: Number(purchaseForm.amount || 0),
+        paymentMode: purchaseForm.paymentMode,
+        description: purchaseForm.description || null,
+      };
+      const res = await fetch('/api/staff/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getStaffAuthHeader() },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        let data: any = {};
+        try { data = await res.json(); } catch {}
+        throw new Error(data.message || 'Failed to add purchase');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Purchase recorded' });
+      setShowPurchaseForm(false);
+      setPurchaseForm({
+        purchaseDate: new Date().toISOString().split('T')[0],
+        category: '',
+        amount: '',
+        paymentMode: 'cash',
+        description: '',
+      });
+      qc.invalidateQueries({ queryKey: ["employee-purchases", employee.id] });
+    },
+    onError: (e: any) => {
+      toast({ title: e.message || 'Failed to add purchase', variant: 'destructive' });
+    }
+  });
 
   useEffect(() => {
     if (open && loggedIn) {
@@ -1031,6 +1075,14 @@ function StaffLoginDialog({
                 <StopCircle className="h-4 w-4 mr-2" />
                 {isClockingOut ? "Ending..." : "End Work"}
               </Button>
+              <Button 
+                className="flex-1"
+                variant="outline"
+                onClick={() => setShowPurchaseForm(true)}
+                title="Record a new purchase"
+              >
+                Record Purchase
+              </Button>
             </div>
 
             {todayAttendance?.checkOut && (
@@ -1038,6 +1090,85 @@ function StaffLoginDialog({
                 Work completed for today. See you tomorrow!
               </p>
             )}
+
+            {/* Purchases Section */}
+            <div className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium">Purchases</h3>
+                <Button size="sm" onClick={() => setShowPurchaseForm(s => !s)}>
+                  {showPurchaseForm ? 'Close' : 'Add Purchase'}
+                </Button>
+              </div>
+
+              {showPurchaseForm && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <Label>Date</Label>
+                    <Input type="date" value={purchaseForm.purchaseDate} onChange={(e) => setPurchaseForm({ ...purchaseForm, purchaseDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Category</Label>
+                    <Input placeholder="e.g. Stationery" value={purchaseForm.category} onChange={(e) => setPurchaseForm({ ...purchaseForm, category: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input type="number" placeholder="0" value={purchaseForm.amount} onChange={(e) => setPurchaseForm({ ...purchaseForm, amount: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Payment Mode</Label>
+                    <Select value={purchaseForm.paymentMode} onValueChange={(v) => setPurchaseForm({ ...purchaseForm, paymentMode: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="credit">Credit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Description</Label>
+                    <Textarea rows={2} placeholder="Notes" value={purchaseForm.description} onChange={(e) => setPurchaseForm({ ...purchaseForm, description: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2 flex justify-end">
+                    <Button onClick={() => createPurchase.mutate()} disabled={createPurchase.isPending}>
+                      {createPurchase.isPending ? 'Saving...' : 'Save Purchase'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Purchases list */}
+              {purchasesQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading purchases...</p>
+              ) : (purchasesQuery.data && purchasesQuery.data.length > 0) ? (
+                <div className="overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left py-2 px-3">Date</th>
+                        <th className="text-left py-2 px-3">Category</th>
+                        <th className="text-left py-2 px-3">Amount</th>
+                        <th className="text-left py-2 px-3">Payment</th>
+                        <th className="text-left py-2 px-3">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {purchasesQuery.data.map((p) => (
+                        <tr key={p.id} className="border-b last:border-b-0">
+                          <td className="py-2 px-3">{p.purchaseDate}</td>
+                          <td className="py-2 px-3">{p.category}</td>
+                          <td className="py-2 px-3">₹{Number(p.amount).toFixed(2)}</td>
+                          <td className="py-2 px-3">{p.paymentMode}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{p.description || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No purchases yet.</p>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>
