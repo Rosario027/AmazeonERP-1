@@ -96,6 +96,7 @@ export const employeePurchases = pgTable("employee_purchases", {
   category: text("category").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   paymentMode: text("payment_mode").notNull().default("cash"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"), // 'paid' or 'unpaid'
   description: text("description"),
   recordedBy: uuid("recorded_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

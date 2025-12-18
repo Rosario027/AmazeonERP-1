@@ -1735,6 +1735,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/staff/purchases/:id/payment-status", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { paymentStatus } = req.body;
+      
+      if (!paymentStatus || !['paid', 'unpaid'].includes(paymentStatus)) {
+        return res.status(400).json({ message: "Invalid payment status. Must be 'paid' or 'unpaid'" });
+      }
+
+      const row = await storage.updateEmployeePurchase(id, { 
+        paymentStatus,
+        updatedAt: new Date()
+      });
+      
+      if (!row) return res.status(404).json({ message: "Purchase not found" });
+      res.json(row);
+    } catch (error: any) {
+      console.error("Update payment status error:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+
   app.delete("/api/staff/purchases/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const { id } = req.params;

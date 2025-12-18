@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Edit, Save, X, Filter, ArrowUpDown } from "lucide-react";
 
@@ -96,6 +97,29 @@ export default function EmployeeFile() {
     },
   });
 
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async ({ purchaseId, paymentStatus }: { purchaseId: string; paymentStatus: string }) => {
+      const res = await fetch(`/api/staff/purchases/${purchaseId}/payment-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ paymentStatus }),
+      });
+      if (!res.ok) {
+        let data: any = {};
+        try { data = await res.json(); } catch {}
+        throw new Error(data.message || "Failed to update payment status");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Payment status updated" });
+      qc.invalidateQueries({ queryKey: ["employee-purchases", employeeId] });
+    },
+    onError: (e: any) => {
+      toast({ title: e.message || "Failed to update payment status", variant: "destructive" });
+    },
+  });
+
   // Attendance summary for current month
   const now = new Date();
   const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
@@ -153,7 +177,11 @@ export default function EmployeeFile() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
   
-  const creditTotal = creditAndAdvances.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  // Calculate total outstanding (only unpaid items)
+  const unpaidPurchases = creditAndAdvances.filter((p) => (p.paymentStatus || 'unpaid') === 'unpaid');
+  const creditTotal = unpaidPurchases.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  const paidCount = creditAndAdvances.filter((p) => p.paymentStatus === 'paid').length;
+  const unpaidCount = unpaidPurchases.length;
   const presentDays = attendance.filter((a) => a.status === 'present').length;
 
   const handleCancel = () => {
@@ -379,10 +407,20 @@ export default function EmployeeFile() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-                <p className="text-sm text-muted-foreground">All credit purchases and salary advances</p>
+                <div>
+                  <p className="text-sm text-muted-foreground">All credit purchases and salary advances</p>
+                  <div className="flex gap-3 mt-1 text-xs">
+                    <span className="text-muted-foreground">
+                      <span className="font-medium text-green-600">{paidCount}</span> paid
+                    </span>
+                    <span className="text-muted-foreground">
+                      <span className="font-medium text-orange-600">{unpaidCount}</span> unpaid
+                    </span>
+                  </div>
+                </div>
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground">Total Outstanding</div>
-                  <div className="text-lg font-semibold">₹{creditTotal.toFixed(2)}</div>
+                  <div className="text-lg font-semibold text-orange-600">₹{creditTotal.toFixed(2)}</div>
                 </div>
               </div>
               
@@ -438,11 +476,13 @@ export default function EmployeeFile() {
                         <th className="text-left py-2 px-3">Category</th>
                         <th className="text-left py-2 px-3">Amount</th>
                         <th className="text-left py-2 px-3">Description</th>
+                        <th className="text-center py-2 px-3">Payment Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sortedPurchases.map((p: any) => {
                         const isAdvance = (p.category || '').toLowerCase() === 'advance';
+                        const isPaid = (p.paymentStatus || 'unpaid') === 'paid';
                         return (
                           <tr key={p.id} className="border-b last:border-b-0">
                             <td className="py-2 px-3">{p.purchaseDate}</td>
@@ -454,6 +494,23 @@ export default function EmployeeFile() {
                             <td className="py-2 px-3">{p.category}</td>
                             <td className="py-2 px-3 font-medium">₹{Number(p.amount).toFixed(2)}</td>
                             <td className="py-2 px-3 text-muted-foreground">{p.description || '-'}</td>
+                            <td className="py-2 px-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <Checkbox 
+                                  checked={isPaid}
+                                  onCheckedChange={(checked) => {
+                                    updatePaymentStatusMutation.mutate({
+                                      purchaseId: p.id,
+                                      paymentStatus: checked ? 'paid' : 'unpaid'
+                                    });
+                                  }}
+                                  disabled={updatePaymentStatusMutation.isPending}
+                                />
+                                <span className={`text-xs ${isPaid ? 'text-green-600' : 'text-orange-600'}`}>
+                                  {isPaid ? 'Paid' : 'Unpaid'}
+                                </span>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
