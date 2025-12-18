@@ -32,7 +32,7 @@ export default function StaffLoginPage() {
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState({
     purchaseDate: new Date().toISOString().split('T')[0],
-    category: "shop-purchase",
+    category: "purchase",
     amount: "",
     paymentMode: "cash",
     description: "",
@@ -70,15 +70,28 @@ export default function StaffLoginPage() {
     enabled: !!employeeId && loggedIn,
   });
 
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    return (
+      purchaseForm.purchaseDate &&
+      purchaseForm.category &&
+      purchaseForm.amount &&
+      Number(purchaseForm.amount) > 0 &&
+      purchaseForm.description.trim() !== ""
+    );
+  };
+
   const createPurchase = useMutation({
     mutationFn: async () => {
+      // For advance, payment mode is not applicable - set to 'advance'
+      const paymentMode = purchaseForm.category === 'advance' ? 'advance' : purchaseForm.paymentMode;
       const payload = {
         employeeId,
         purchaseDate: purchaseForm.purchaseDate,
         category: purchaseForm.category,
         amount: Number(purchaseForm.amount || 0),
-        paymentMode: purchaseForm.paymentMode,
-        description: purchaseForm.description || null,
+        paymentMode,
+        description: purchaseForm.description,
       };
       const res = await fetch('/api/staff/purchases', {
         method: 'POST',
@@ -97,7 +110,7 @@ export default function StaffLoginPage() {
       setShowPurchaseForm(false);
       setPurchaseForm({
         purchaseDate: new Date().toISOString().split('T')[0],
-        category: 'shop-purchase',
+        category: 'purchase',
         amount: '',
         paymentMode: 'cash',
         description: '',
@@ -375,76 +388,88 @@ export default function StaffLoginPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  My Purchases
+                  My Purchases / Advances
                 </CardTitle>
                 <Button onClick={() => setShowPurchaseForm(!showPurchaseForm)}>
-                  {showPurchaseForm ? 'Cancel' : 'Record Purchase'}
+                  {showPurchaseForm ? 'Cancel' : 'Purchase / Advance'}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {showPurchaseForm && (
                 <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
-                  <h3 className="font-medium">New Purchase</h3>
+                  <h3 className="font-medium">New {purchaseForm.category === 'advance' ? 'Advance' : 'Purchase'}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Date</Label>
+                      <Label>Date <span className="text-destructive">*</span></Label>
                       <Input 
                         type="date" 
                         value={purchaseForm.purchaseDate} 
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, purchaseDate: e.target.value })} 
+                        required
                       />
                     </div>
                     <div>
-                      <Label>Category</Label>
+                      <Label>Category <span className="text-destructive">*</span></Label>
                       <Select 
                         value={purchaseForm.category} 
                         onValueChange={(v) => setPurchaseForm({ ...purchaseForm, category: v })}
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="shop-purchase">Shop Purchase</SelectItem>
+                          <SelectItem value="purchase">Purchase</SelectItem>
                           <SelectItem value="advance">Advance</SelectItem>
-                          <SelectItem value="reimbursement">Reimbursement</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label>Amount (₹)</Label>
+                      <Label>Amount (₹) <span className="text-destructive">*</span></Label>
                       <Input 
                         type="number" 
-                        placeholder="0" 
+                        placeholder="Enter amount" 
                         value={purchaseForm.amount} 
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, amount: e.target.value })} 
+                        required
                       />
                     </div>
-                    <div>
-                      <Label>Payment Mode</Label>
-                      <Select 
-                        value={purchaseForm.paymentMode} 
-                        onValueChange={(v) => setPurchaseForm({ ...purchaseForm, paymentMode: v })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="online">Online</SelectItem>
-                          <SelectItem value="credit">Credit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label>Description</Label>
+                    {purchaseForm.category !== 'advance' && (
+                      <div>
+                        <Label>Payment Mode <span className="text-destructive">*</span></Label>
+                        <Select 
+                          value={purchaseForm.paymentMode} 
+                          onValueChange={(v) => setPurchaseForm({ ...purchaseForm, paymentMode: v })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">Cash</SelectItem>
+                            <SelectItem value="online">Online</SelectItem>
+                            <SelectItem value="credit">Credit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className={purchaseForm.category === 'advance' ? 'md:col-span-2' : 'md:col-span-2'}>
+                      <Label>Description <span className="text-destructive">*</span></Label>
                       <Textarea 
                         rows={2} 
-                        placeholder="Notes about this purchase" 
+                        placeholder={purchaseForm.category === 'advance' ? 'Reason for advance' : 'Details about this purchase'}
                         value={purchaseForm.description} 
                         onChange={(e) => setPurchaseForm({ ...purchaseForm, description: e.target.value })} 
+                        required
                       />
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <Button onClick={() => createPurchase.mutate()} disabled={createPurchase.isPending}>
-                      {createPurchase.isPending ? 'Saving...' : 'Save Purchase'}
+                    <Button 
+                      onClick={() => createPurchase.mutate()} 
+                      disabled={createPurchase.isPending || !isFormValid()}
+                    >
+                      {createPurchase.isPending 
+                        ? 'Saving...' 
+                        : purchaseForm.category === 'advance' 
+                          ? 'Save Advance' 
+                          : 'Save Purchase'
+                      }
                     </Button>
                   </div>
                 </div>
