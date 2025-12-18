@@ -1388,7 +1388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You cannot edit this employee record" });
       }
       
-      const { firstName, lastName, phone, alternatePhone, address, userId, password, idProofFiles, ...rest } = req.body;
+      const { firstName, lastName, phone, alternatePhone, address, userId, password, idProofFiles, fullName, salary, role, status, ...rest } = req.body;
       
       // Phone validation
       if (phone && !/^\d{10}$/.test(phone)) {
@@ -1405,10 +1405,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (firstName || lastName) {
         updateData.fullName = `${firstName || existing.firstName} ${lastName || existing.lastName}`;
       }
+      // If fullName is directly provided (from admin edit), use it
+      if (fullName !== undefined && !firstName && !lastName) {
+        updateData.fullName = fullName;
+      }
       if (phone !== undefined) updateData.phone = phone;
       if (alternatePhone !== undefined) updateData.alternatePhone = alternatePhone;
       if (address !== undefined) updateData.address = address;
       if (userId !== undefined) updateData.userId = userId;
+      if (role !== undefined) updateData.role = role;
+      if (status !== undefined) updateData.status = status;
+      // Convert salary to string for numeric column
+      if (salary !== undefined) {
+        updateData.salary = salary !== null ? String(salary) : null;
+      }
       if (idProofFiles !== undefined) {
         updateData.idProofFiles = JSON.stringify(idProofFiles);
       }
@@ -1438,7 +1448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error?.code === '23505') {
         return res.status(400).json({ message: "User ID already exists" });
       }
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: error.message || "Server error" });
     }
   });
 
