@@ -1353,15 +1353,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isLocked: !isAdmin, // Lock immediately for non-admin users
       } as any);
       
-      // Create audit log
-      await storage.createAuditLog({
-        employeeId: employee.id,
-        action: 'create',
-        changedBy: user?.userId || 'unknown',
-        changedByRole: user?.role || 'unknown',
-        newData: JSON.stringify(employee),
-        ipAddress: req.ip || null,
-      });
+      // Create audit log (non-blocking - don't fail the request if logging fails)
+      try {
+        await storage.createAuditLog({
+          employeeId: employee.id,
+          action: 'create',
+          changedBy: user?.userId || 'unknown',
+          changedByRole: user?.role || 'unknown',
+          newData: JSON.stringify(employee),
+          ipAddress: req.ip || null,
+        });
+      } catch (auditError: any) {
+        console.error("Audit log creation failed (non-critical):", auditError.message);
+      }
       
       res.status(201).json(employee);
     } catch (error: any) {
@@ -1431,16 +1435,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employee = await storage.updateEmployee(id, updateData);
       if (!employee) return res.status(404).json({ message: "Employee not found" });
       
-      // Create audit log
-      await storage.createAuditLog({
-        employeeId: id,
-        action: 'update',
-        changedBy: user?.userId || 'unknown',
-        changedByRole: user?.role || 'unknown',
-        previousData: JSON.stringify(existing),
-        newData: JSON.stringify(employee),
-        ipAddress: req.ip || null,
-      });
+      // Create audit log (non-blocking - don't fail the request if logging fails)
+      try {
+        await storage.createAuditLog({
+          employeeId: id,
+          action: 'update',
+          changedBy: user?.userId || 'unknown',
+          changedByRole: user?.role || 'unknown',
+          previousData: JSON.stringify(existing),
+          newData: JSON.stringify(employee),
+          ipAddress: req.ip || null,
+        });
+      } catch (auditError: any) {
+        // Log the error but don't fail the request
+        console.error("Audit log creation failed (non-critical):", auditError.message);
+      }
       
       res.json(employee);
     } catch (error: any) {
@@ -1537,15 +1546,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const attendance = await storage.clockIn(employeeId);
       
-      // Create audit log
-      await storage.createAuditLog({
-        employeeId,
-        action: 'clock_in',
-        changedBy: (req as any).user?.userId || employeeId,
-        changedByRole: (req as any).user?.role || 'staff',
-        newData: JSON.stringify({ checkIn: attendance.checkIn }),
-        ipAddress: req.ip || null,
-      });
+      // Create audit log (non-blocking - don't fail the request if logging fails)
+      try {
+        await storage.createAuditLog({
+          employeeId,
+          action: 'clock_in',
+          changedBy: (req as any).user?.userId || employeeId,
+          changedByRole: (req as any).user?.role || 'staff',
+          newData: JSON.stringify({ checkIn: attendance.checkIn }),
+          ipAddress: req.ip || null,
+        });
+      } catch (auditError: any) {
+        console.error("Audit log creation failed (non-critical):", auditError.message);
+      }
       
       res.json(attendance);
     } catch (error) {
@@ -1564,15 +1577,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Must clock in before clocking out" });
       }
       
-      // Create audit log
-      await storage.createAuditLog({
-        employeeId,
-        action: 'clock_out',
-        changedBy: (req as any).user?.userId || employeeId,
-        changedByRole: (req as any).user?.role || 'staff',
-        newData: JSON.stringify({ checkOut: attendance.checkOut }),
-        ipAddress: req.ip || null,
-      });
+      // Create audit log (non-blocking - don't fail the request if logging fails)
+      try {
+        await storage.createAuditLog({
+          employeeId,
+          action: 'clock_out',
+          changedBy: (req as any).user?.userId || employeeId,
+          changedByRole: (req as any).user?.role || 'staff',
+          newData: JSON.stringify({ checkOut: attendance.checkOut }),
+          ipAddress: req.ip || null,
+        });
+      } catch (auditError: any) {
+        console.error("Audit log creation failed (non-critical):", auditError.message);
+      }
       
       res.json(attendance);
     } catch (error) {
