@@ -2,9 +2,8 @@ import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
 
-// Load .env only if DATABASE_URL not already provided and we're not in production.
-// This avoids a hard runtime crash in production environments where dotenv might be absent.
-if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'production') {
+// Load .env file for development environment
+if (process.env.NODE_ENV !== 'production') {
   try {
     await import('dotenv/config');
   } catch (e) {
