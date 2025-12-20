@@ -346,6 +346,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Number(req.body.cardAmount ?? 0),
       );
 
+      // Get or create customer for tracking
+      let customerId: number | null = null;
+      if (customerName && customerPhone) {
+        try {
+          const customer = await storage.getOrCreateCustomer(customerName, customerPhone);
+          customerId = customer.id;
+        } catch (err) {
+          console.log("Could not create/get customer:", err);
+        }
+      }
+
       const invoice = await storage.createInvoice(
         {
           invoiceNumber,
@@ -361,6 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grandTotal: roundedGrandTotal.toString(),
           cashAmount: normalizedCashAmount.toFixed(2),
           cardAmount: normalizedCardAmount.toFixed(2),
+          customerId,
         },
         invoiceItems
       );
