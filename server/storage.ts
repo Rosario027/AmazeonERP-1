@@ -14,6 +14,7 @@ import {
   cashBalances,
   cashWithdrawals,
   sessions,
+  customers,
   type User,
   type InsertUser,
   type Product,
@@ -33,6 +34,9 @@ import {
   type InsertCashWithdrawal,
   type Session,
   type InsertSession,
+  type Customer,
+  type InsertCustomer,
+  type CustomerWithStats,
   employees,
   employeeAttendance,
   employeePurchases,
@@ -126,6 +130,22 @@ export interface IStorage {
   // Staff: Attendance
   listAttendance(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeeAttendance[]>;
   getAttendanceForExport(employeeIds: string[], fromDate: string, toDate: string): Promise<EmployeeAttendance[]>;
+  
+  // Customers
+  getOrCreateCustomer(name: string, phone: string): Promise<Customer>;
+  getCustomers(): Promise<CustomerWithStats[]>;
+  getCustomer(id: number): Promise<Customer | undefined>;
+  getCustomerStats(filters?: { startDate?: string; endDate?: string }): Promise<{
+    totalNewCustomers: number;
+    topInvoices: Array<{
+      id: number;
+      invoiceNumber: string;
+      customerName: string;
+      grandTotal: string;
+      createdAt: Date;
+    }>;
+  }>;
+  getCustomerInvoices(customerId: number): Promise<Invoice[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -261,9 +281,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<Invoice> {
+    // Get or create customer if phone number is provided
+    let customerId: number | undefined;
+    if (invoice.customerPhone) {
+      const customer = await this.getOrCreateCustomer(invoice.customerName, invoice.customerPhone);
+      customerId = customer.id;
+    }
+    
     // Normalize undefined customerPhone to null and ensure gstMode is explicitly set
     const normalizedInvoice = {
       ...invoice,
+      customerId,
       customerPhone: invoice.customerPhone ?? null,
       gstMode: invoice.gstMode ?? 'inclusive', // Explicitly include gstMode to override schema default
     };
@@ -965,6 +993,147 @@ export class DatabaseStorage implements IStorage {
       .update(sessions)
       .set({ isActive: false })
       .where(eq(sessions.userId, userId));
+  }
+
+  // Customer Management
+  async getOrCreateCustomer(name: string, phone: string): Promise<Customer> {
+    // Try to find existing customer with the same name and phone
+    const [existing] = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.name, name), eq(customers.phone, phone)));
+    
+    if (existing) {
+      return existing;
+    }
+    
+    // Generate next customer code
+    const maxCodeResult = await db
+      .select({ maxCode: sql<string>`MAX(${customers.customerCode})` })
+      .from(customers);
+    
+    let nextNumber = 1;
+    if (maxCodeResult[0]?.maxCode) {
+      const match = maxCodeResult[0].maxCode.match(/CUST-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    
+    const customerCode = `CUST-${nextNumber}`;
+    
+    // Create new customer
+    const [newCustomer] = await db
+      .insert(customers)
+      .values({ customerCode, name, phone })
+      .returning();
+    
+    return newCustomer;
+  }
+
+  async getCustomers(): Promise<CustomerWithStats[]> {
+    const result = await db
+      .select({
+        id: customers.id,
+        customerCode: customers.customerCode,
+        name: customers.name,
+        phone: customers.phone,
+        createdAt: customers.createdAt,
+        totalOrders: sql<number>`COUNT(DISTINCT ${invoices.id})`,
+        totalSpend: sql<string>`COALESCE(SUM(CASE WHEN ${invoices.deletedAt} IS NULL THEN ${invoices.grandTotal} ELSE 0 END), 0)`,
+      })
+      .from(customers)
+      .leftJoin(invoices, eq(customers.id, invoices.customerId))
+      .groupBy(customers.id, customers.customerCode, customers.name, customers.phone, customers.createdAt)
+      .orderBy(desc(customers.createdAt));
+    
+    return result.map(row => ({
+      id: row.id,
+      customerCode: row.customerCode,
+      name: row.name,
+      phone: row.phone,
+      createdAt: row.createdAt,
+      totalOrders: Number(row.totalOrders),
+      totalSpend: row.totalSpend,
+    }));
+  }
+
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id));
+    
+    return customer || undefined;
+  }
+
+  async getCustomerStats(filters?: { startDate?: string; endDate?: string }): Promise<{
+    totalNewCustomers: number;
+    topInvoices: Array<{
+      id: number;
+      invoiceNumber: string;
+      customerName: string;
+      grandTotal: string;
+      createdAt: Date;
+    }>;
+  }> {
+    // Build date conditions
+    const conditions = [isNull(invoices.deletedAt)];
+    
+    if (filters?.startDate) {
+      const startDate = parseLocalDate(filters.startDate);
+      conditions.push(gte(customers.createdAt, startDate));
+    }
+    
+    if (filters?.endDate) {
+      const endDate = parseLocalDate(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      conditions.push(lte(customers.createdAt, endDate));
+    }
+    
+    // Get total new customers in the period
+    const customerCountResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(customers)
+      .where(filters?.startDate || filters?.endDate ? and(...conditions.filter(c => c !== conditions[0])) : undefined);
+    
+    const totalNewCustomers = Number(customerCountResult[0]?.count || 0);
+    
+    // Get top 3 invoices from last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const topInvoicesResult = await db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        customerName: invoices.customerName,
+        grandTotal: invoices.grandTotal,
+        createdAt: invoices.createdAt,
+      })
+      .from(invoices)
+      .where(and(
+        isNull(invoices.deletedAt),
+        gte(invoices.createdAt, thirtyDaysAgo)
+      ))
+      .orderBy(desc(invoices.grandTotal))
+      .limit(3);
+    
+    return {
+      totalNewCustomers,
+      topInvoices: topInvoicesResult,
+    };
+  }
+
+  async getCustomerInvoices(customerId: number): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(and(
+        eq(invoices.customerId, customerId),
+        isNull(invoices.deletedAt)
+      ))
+      .orderBy(desc(invoices.createdAt));
   }
 }
 

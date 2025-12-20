@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { invoices, invoiceItems, products, insertUserSchema } from "@shared/schema";
 import { eq, and, gte, lte, sql, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -2008,6 +2008,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       console.error("Delete withdrawal error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Customer Management (Admin only)
+  app.get("/api/customers", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error("Get customers error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/customers/stats", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const stats = await storage.getCustomerStats({
+        startDate: startDate as string,
+        endDate: endDate as string,
+      });
+      res.json(stats);
+    } catch (error) {
+      console.error("Get customer stats error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/customers/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const customer = await storage.getCustomer(id);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Get customer error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/customers/:id/invoices", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const invoices = await storage.getCustomerInvoices(id);
+      res.json(invoices);
+    } catch (error) {
+      console.error("Get customer invoices error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
