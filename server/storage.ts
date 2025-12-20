@@ -122,6 +122,10 @@ export interface IStorage {
   updateSessionActivity(sessionId: string): Promise<void>;
   terminateSession(sessionId: string): Promise<void>;
   terminateUserSessions(userId: string): Promise<void>;
+  
+  // Staff: Attendance
+  listAttendance(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeeAttendance[]>;
+  getAttendanceForExport(employeeIds: string[], fromDate: string, toDate: string): Promise<EmployeeAttendance[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -745,6 +749,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Staff: Attendance
+  async getAttendanceForExport(employeeIds: string[], fromDate: string, toDate: string): Promise<EmployeeAttendance[]> {
+    const conditions: any[] = [inArray(employeeAttendance.employeeId, employeeIds)];
+    if (fromDate) conditions.push(sql`DATE(${employeeAttendance.attendanceDate}) >= ${fromDate}`);
+    if (toDate) conditions.push(sql`DATE(${employeeAttendance.attendanceDate}) <= ${toDate}`);
+    return await db.select().from(employeeAttendance).where(and(...conditions)).orderBy(desc(employeeAttendance.attendanceDate));
+  }
+
   async listAttendance(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeeAttendance[]> {
     const conditions: any[] = [eq(employeeAttendance.employeeId, employeeId)];
     if (fromDate) conditions.push(sql`DATE(${employeeAttendance.attendanceDate}) >= ${fromDate}`);
