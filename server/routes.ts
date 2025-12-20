@@ -1672,6 +1672,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/staff/attendance/export", authMiddleware, async (req, res) => {
+    try {
+      const { employeeIds, startDate, endDate } = req.body;
+      if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0 || !startDate || !endDate) {
+        return res.status(400).json({ message: "Invalid parameters" });
+      }
+
+      // 1. Get Employees
+      const allEmployees = await storage.listEmployees();
+      const selectedEmployees = allEmployees.filter(e => employeeIds.includes(e.id));
+
+      if (selectedEmployees.length === 0) {
+        return res.status(404).json({ message: "No employees found" });
+      }
+
+      // 2. Get Attendance Data
+      const attendanceRecords = await storage.getAttendanceForExport(employeeIds, startDate, endDate);
+
+      // 3. Generate Excel
+      const workbook = new ExcelJS.Workbook();
+
+      for (const employee of selectedEmployees) {
+        const sheetName = employee.fullName.replace(/[\\/*[\]:?]/g, '_').substring(0, 30);
+        const sheet = workbook.addWorksheet(sheetName || "Sheet");
+        
+        // Header
+        sheet.addRow(["Attendance Report"]);
+        sheet.addRow(["Employee Name:", employee.fullName]);
+        sheet.addRow(["Employee Code:", employee.employeeCode]);
+        sheet.addRow(["Period:", `${startDate} to ${endDate}`]);
+        sheet.addRow([]); // Spacer
+
+        // Filter attendance for this employee
+        const empAttendance = attendanceRecords.filter(a => a.employeeId === employee.id);
+
+        // Summary
+        const totalPresent = empAttendance.filter(a => a.status === 'present').length;
+        const totalHalfDay = empAttendance.filter(a => a.status === 'half-day').length;
+        const totalAbsent = empAttendance.filter(a => a.status === 'absent').length;
+
+        sheet.addRow(["Overall Summary"]);
+        sheet.addRow(["Total Present", totalPresent]);
+        sheet.addRow(["Total Half Days", totalHalfDay]);
+        sheet.addRow(["Total Absent", totalAbsent]);
+        sheet.addRow([]); // Spacer
+
+        // Detailed Month-wise Breakdown
+        sheet.addRow(["Month-wise Details"]);
+        sheet.addRow(["Month", "Present", "Half Day", "Absent", "Total Days Recorded"]);
+
+        // Group by Month
+        const monthlyStats = new Map<string, { present: number, half: number, absent: number }>();
+        
+        empAttendance.forEach(a => {
+            // attendanceDate is YYYY-MM-DD string
+            const monthKey = a.attendanceDate.substring(0, 7); // YYYY-MM
+            if (!monthlyStats.has(monthKey)) {
+                monthlyStats.set(monthKey, { present: 0, half: 0, absent: 0 });
+            }
+            const stats = monthlyStats.get(monthKey)!;
+            if (a.status === 'present') stats.present++;
+            else if (a.status === 'half-day') stats.half++;
+            else if (a.status === 'absent') stats.absent++;
+        });
+
+        // Sort months
+        const months = Array.from(monthlyStats.keys()).sort();
+
+        months.forEach(month => {
+            const stats = monthlyStats.get(month)!;
+            const total = stats.present + stats.half + stats.absent;
+            sheet.addRow([month, stats.present, stats.half, stats.absent, total]);
+        });
+
+        // Styling
+        sheet.getColumn(1).width = 20;
+        sheet.getColumn(2).width = 15;
+        sheet.getColumn(3).width = 15;
+        sheet.getColumn(4).width = 15;
+        sheet.getColumn(5).width = 20;
+        
+        // Bold headers
+        sheet.getRow(1).font = { bold: true, size: 14 };
+        sheet.getRow(7).font = { bold: true }; // Overall Summary
+        sheet.getRow(13).font = { bold: true }; // Month-wise Details
+        sheet.getRow(14).font = { bold: true }; // Table Header
+      }
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=Attendance_Report.xlsx"
+      );
+
+      await workbook.xlsx.write(res);
+      res.end();
+
+    } catch (error) {
+      console.error("Export attendance error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Employee purchases: record/list (admin write; authenticated list)
   app.get("/api/staff/purchases/:employeeId", authMiddleware, async (req, res) => {
     try {
