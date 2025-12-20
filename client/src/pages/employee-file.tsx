@@ -455,29 +455,6 @@ export default function EmployeeFile() {
                     </div>
                   </div>
 
-                  {/* Calculation Breakdown */}
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Calculation Formula</h4>
-                    <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
-                      <p className="mb-2">
-                        <strong>Daily Salary</strong> = Monthly Salary ÷ Days in Month
-                      </p>
-                      <p className="mb-2">
-                        ₹{Number(employee.salary).toFixed(2)} ÷ {new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()} days = 
-                        ₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)} per day
-                      </p>
-                      <p className="mb-2">
-                        <strong>Payable Salary</strong> = Daily Salary × Present Days
-                      </p>
-                      <p>
-                        ₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)} × {presentDays} days = 
-                        <span className="font-semibold text-green-600 ml-1">
-                          ₹{((Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * presentDays).toFixed(2)}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
                   {/* Deduction Details */}
                   {presentDays < new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() && (
                     <div className="space-y-3">
