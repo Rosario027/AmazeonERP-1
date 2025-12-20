@@ -400,6 +400,112 @@ export default function EmployeeFile() {
             </CardContent>
           </Card>
 
+          {/* Staff Compensation / Salary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Staff Compensation / Salary</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Salary calculation based on attendance and pay details
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!employee.salary ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <p>No salary information available for this employee.</p>
+                  <p className="text-xs mt-1">Please set the monthly salary in the employee details above.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Calculation Summary */}
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h4 className="font-medium mb-3">Monthly Salary Calculation</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Monthly Salary:</span>
+                          <span className="font-medium">₹{Number(employee.salary).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Days in Month:</span>
+                          <span className="font-medium">{new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Daily Salary:</span>
+                          <span className="font-medium">₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Present Days:</span>
+                          <span className="font-medium text-green-600">{presentDays}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Absent Days:</span>
+                          <span className="font-medium text-red-600">
+                            {new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - presentDays}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-base font-semibold border-t pt-2">
+                          <span>Payable Salary:</span>
+                          <span className="text-green-600">
+                            ₹{((Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * presentDays).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Calculation Breakdown */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Calculation Formula</h4>
+                    <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
+                      <p className="mb-2">
+                        <strong>Daily Salary</strong> = Monthly Salary ÷ Days in Month
+                      </p>
+                      <p className="mb-2">
+                        ₹{Number(employee.salary).toFixed(2)} ÷ {new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()} days = 
+                        ₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)} per day
+                      </p>
+                      <p className="mb-2">
+                        <strong>Payable Salary</strong> = Daily Salary × Present Days
+                      </p>
+                      <p>
+                        ₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)} × {presentDays} days = 
+                        <span className="font-semibold text-green-600 ml-1">
+                          ₹{((Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * presentDays).toFixed(2)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Deduction Details */}
+                  {presentDays < new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-orange-600">Deductions</h4>
+                      <div className="bg-orange-50 border border-orange-200 p-3 rounded text-sm">
+                        <div className="flex justify-between">
+                          <span>Absent Days Deduction:</span>
+                          <span className="font-medium text-red-600">
+                            -₹{((Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * (new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - presentDays)).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          ({new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - presentDays} absent days × ₹{(Number(employee.salary) / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).toFixed(2)} per day)
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Month Info */}
+                  <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
+                    <p><strong>Calculation Period:</strong> {startDate} to {endDate} ({new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()} days total)</p>
+                    <p><strong>Last Updated:</strong> {new Date().toLocaleString()}</p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Credit Purchases / Advances */}
           <Card>
             <CardHeader>
