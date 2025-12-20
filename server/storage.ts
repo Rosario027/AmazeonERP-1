@@ -47,7 +47,7 @@ import {
   type NewStaffAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql, desc, isNull, max } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc, isNull, max, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -900,7 +900,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllActiveSessions(): Promise<(Session & { username: string; role: string })[]> {
-    const results = await db
+    // Get all active sessions ordered by last activity
+    const allResults = await db
       .select({
         session: sessions,
         username: users.username,
@@ -911,7 +912,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(sessions.isActive, true))
       .orderBy(desc(sessions.lastActivityAt));
     
-    return results.map(r => ({
+    // If more than 10 sessions, terminate the older ones (beyond the first 10)
+    if (allResults.length > 10) {
+      const sessionsToTerminate = allResults.slice(10);
+      const idsToTerminate = sessionsToTerminate.map(r => r.session.id);
+      
+      // Terminate sessions beyond the 10 most recent
+      await db
+        .update(sessions)
+        .set({ isActive: false })
+        .where(inArray(sessions.id, idsToTerminate));
+      
+      console.log(`Automatically terminated ${idsToTerminate.length} old sessions`);
+    }
+    
+    // Return only the 10 most recent sessions
+    const recentResults = allResults.slice(0, 10);
+    return recentResults.map(r => ({
       ...r.session,
       username: r.username,
       role: r.role,

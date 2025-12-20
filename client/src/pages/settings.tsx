@@ -87,7 +87,10 @@ function ActiveSessionsSection() {
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle className="text-lg font-medium">Active Sessions</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-medium">Active Sessions</CardTitle>
+          <p className="text-xs text-muted-foreground">Showing last 10 sessions</p>
+        </div>
       </CardHeader>
       <CardContent>
         {sessions.length === 0 ? (
