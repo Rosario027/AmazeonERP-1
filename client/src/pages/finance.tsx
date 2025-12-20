@@ -274,6 +274,14 @@ export default function Finance() {
   const isLoading = openingQuery.isLoading || balancesQuery.isLoading;
   const hasError = openingQuery.isError || balancesQuery.isError;
 
+  // Debug: Log errors if any
+  if (openingQuery.isError) {
+    console.error("Opening query error:", openingQuery.error);
+  }
+  if (balancesQuery.isError) {
+    console.error("Balances query error:", balancesQuery.error);
+  }
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div>
