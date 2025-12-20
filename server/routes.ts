@@ -1672,6 +1672,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export attendance report as Excel
+  app.post("/api/staff/attendance/export", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { employeeIds, startDate, endDate } = req.body;
+      
+      if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs are required" });
+      }
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+
+      // Fetch employees data
+      const employees = await storage.getEmployeesByIds(employeeIds);
+      if (employees.length === 0) {
+        return res.status(404).json({ message: "No employees found" });
+      }
+
+      const workbook = new ExcelJS.Workbook();
+
+      // Process each employee
+      for (const employee of employees) {
+        // Fetch attendance data for this employee
+        const attendanceData = await storage.listAttendance(employee.id, startDate, endDate);
+        
+        // Create worksheet for this employee
+        const worksheet = workbook.addWorksheet(`${employee.fullName} (${employee.employeeCode})`);
+        
+        // Summary Section
+        const totalDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const presentDays = attendanceData.filter(a => a.status === 'present').length;
+        const halfDays = attendanceData.filter(a => a.status === 'half-day').length;
+        const absentDays = attendanceData.filter(a => a.status === 'absent').length;
+        const noEntryDays = totalDays - presentDays - halfDays - absentDays;
+
+        // Title
+        worksheet.mergeCells("A1:F1");
+        const titleCell = worksheet.getCell("A1");
+        titleCell.value = `Attendance Report - ${employee.fullName} (${employee.employeeCode})`;
+        titleCell.font = { size: 16, bold: true };
+        titleCell.alignment = { horizontal: "center" };
+
+        // Period info
+        worksheet.mergeCells("A2:F2");
+        const periodCell = worksheet.getCell("A2");
+        periodCell.value = `Period: ${startDate} to ${endDate}`;
+        periodCell.font = { size: 12, bold: true };
+        periodCell.alignment = { horizontal: "center" };
+
+        // Summary section
+        worksheet.addRow([]);
+        worksheet.addRow(["SUMMARY"]);
+        worksheet.addRow(["Period", `${startDate} to ${endDate}`]);
+        worksheet.addRow(["Total Days", totalDays]);
+        worksheet.addRow(["Present Days", presentDays]);
+        worksheet.addRow(["Half Days", halfDays]);
+        worksheet.addRow(["Absent Days", absentDays]);
+        worksheet.addRow(["No Entry Days", noEntryDays]);
+
+        // Style summary section
+        const summaryRows = [4, 5, 6, 7, 8, 9, 10];
+        summaryRows.forEach(rowNum => {
+          const row = worksheet.getRow(rowNum);
+          if (rowNum === 4) {
+            row.font = { bold: true };
+            row.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFE0E0E0" },
+            };
+          }
+        });
+
+        // Detailed Records Section
+        worksheet.addRow([]);
+        worksheet.addRow([]);
+        worksheet.addRow(["DETAILED RECORDS"]);
+        const headerRow = worksheet.addRow([
+          "Date",
+          "Day",
+          "Status",
+          "Check In",
+          "Check Out",
+          "Notes"
+        ]);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE0E0E0" },
+        };
+
+        // Generate all dates in range and populate attendance data
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const currentDate = new Date(start);
+        
+        while (currentDate <= end) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+          const attendance = attendanceData.find(a => a.attendanceDate === dateStr);
+          
+          const status = attendance ? 
+            (attendance.status === 'present' ? 'Present' : 
+             attendance.status === 'absent' ? 'Absent' : 'Half Day') : 
+            'No Entry';
+          
+          const checkIn = attendance?.checkIn ? 
+            new Date(attendance.checkIn).toLocaleTimeString('en-IN', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true 
+            }) : '';
+          
+          const checkOut = attendance?.checkOut ? 
+            new Date(attendance.checkOut).toLocaleTimeString('en-IN', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true 
+            }) : '';
+          
+          worksheet.addRow([
+            dateStr,
+            dayName,
+            status,
+            checkIn,
+            checkOut,
+            attendance?.notes || ''
+          ]);
+          
+          // Color code based on status
+          const lastRow = worksheet.lastRow;
+          if (lastRow) {
+            const statusCell = lastRow.getCell(3);
+            if (status === 'Present') {
+              statusCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFC6EFCC" }, // Light green
+              };
+            } else if (status === 'Absent') {
+              statusCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFC7CE" }, // Light red
+              };
+            } else if (status === 'Half Day') {
+              statusCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFEB9C" }, // Light yellow
+              };
+            } else {
+              statusCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFF2F2F2" }, // Light gray
+              };
+            }
+          }
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Auto-fit columns
+        worksheet.columns.forEach((column) => {
+          if (column && column.eachCell) {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: true }, (cell) => {
+              const cellValue = cell.value ? cell.value.toString() : "";
+              maxLength = Math.max(maxLength, cellValue.length);
+            });
+            column.width = Math.min(Math.max(maxLength + 2, 12), 25);
+          }
+        });
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=attendance-report-${startDate}-to-${endDate}.xlsx`);
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error generating attendance report:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Employee purchases: record/list (admin write; authenticated list)
   app.get("/api/staff/purchases/:employeeId", authMiddleware, async (req, res) => {
     try {

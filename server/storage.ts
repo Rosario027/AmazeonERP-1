@@ -122,6 +122,12 @@ export interface IStorage {
   updateSessionActivity(sessionId: string): Promise<void>;
   terminateSession(sessionId: string): Promise<void>;
   terminateUserSessions(userId: string): Promise<void>;
+  
+  // Staff: Employees
+  listEmployees(): Promise<Employee[]>;
+  getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeByUserId(userId: string): Promise<Employee | undefined>;
+  getEmployeesByIds(ids: string[]): Promise<Employee[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -684,6 +690,11 @@ export class DatabaseStorage implements IStorage {
   async getEmployeeByUserId(userId: string): Promise<Employee | undefined> {
     const [row] = await db.select().from(employees).where(eq(employees.userId, userId));
     return row || undefined;
+  }
+
+  async getEmployeesByIds(ids: string[]): Promise<Employee[]> {
+    if (ids.length === 0) return [];
+    return await db.select().from(employees).where(inArray(employees.id, ids));
   }
 
   // Auto-generate next employee code: EMP-1, EMP-2, etc.

@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { 
   UserPlus, Users, Clock, Eye, Edit, Trash2, Upload, X, 
   Calendar, CheckCircle, XCircle, PlayCircle, StopCircle,
-  FileText, Image, Download
+  FileText, Image, Download, FileSpreadsheet
 } from "lucide-react";
 
 // Types
@@ -1125,6 +1125,7 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
   const [editingDay, setEditingDay] = useState<{ day: number; date: string } | null>(null);
   const [editStatus, setEditStatus] = useState<string>("present");
   const [editNotes, setEditNotes] = useState<string>("");
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const { data: attendance, refetch } = useQuery({
     queryKey: ["attendance", selectedEmployee?.id, currentMonth.toISOString()],
@@ -1217,19 +1218,30 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
             <CardTitle>Attendance Calendar</CardTitle>
             <CardDescription>Click on any day to set attendance status</CardDescription>
           </div>
-          <Select 
-            value={selectedEmployee?.id || ""} 
-            onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Employee" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id}>{emp.fullName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExportDialog(true)}
+              disabled={employees.length === 0}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+            <Select 
+              value={selectedEmployee?.id || ""} 
+              onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select Employee" />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.fullName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -1353,6 +1365,226 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
           </>
         )}
       </CardContent>
+
+      {/* Export Dialog */}
+      <ExportAttendanceDialog 
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        employees={employees}
+      />
     </Card>
+  );
+}
+
+// Export Attendance Dialog Component
+function ExportAttendanceDialog({ 
+  open, 
+  onOpenChange, 
+  employees 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  employees: Employee[];
+}) {
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleEmployeeToggle = (employeeId: string) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedEmployees.length === employees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(employees.map(emp => emp.id));
+    }
+  };
+
+  const handleExport = async () => {
+    if (selectedEmployees.length === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      toast({ title: "Please select start and end dates", variant: "destructive" });
+      return;
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      toast({ title: "Start date cannot be after end date", variant: "destructive" });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const response = await fetch("/api/staff/attendance/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader()
+        },
+        body: JSON.stringify({
+          employeeIds: selectedEmployees,
+          startDate,
+          endDate
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate report");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `attendance-report-${startDate}-to-${endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Attendance report downloaded successfully" });
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({ title: "Failed to generate report", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Set default dates to current month
+  useEffect(() => {
+    if (open && !startDate && !endDate) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      setStartDate(firstDay.toISOString().split('T')[0]);
+      setEndDate(lastDay.toISOString().split('T')[0]);
+    }
+  }, [open, startDate, endDate]);
+
+  const selectedEmployeeNames = employees
+    .filter(emp => selectedEmployees.includes(emp.id))
+    .map(emp => emp.fullName);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Export Attendance Report</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Employee Selection */}
+          <div>
+            <Label className="text-base font-medium">Select Employees</Label>
+            <div className="mt-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="text-xs"
+                >
+                  {selectedEmployees.length === employees.length ? "Deselect All" : "Select All"}
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {selectedEmployees.length} of {employees.length} employees selected
+                </span>
+              </div>
+              
+              <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                {employees.map((emp) => (
+                  <div key={emp.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={emp.id}
+                      checked={selectedEmployees.includes(emp.id)}
+                      onChange={() => handleEmployeeToggle(emp.id)}
+                      className="rounded border-gray-300"
+                    />
+                    <label 
+                      htmlFor={emp.id} 
+                      className="text-sm cursor-pointer flex-1 flex items-center gap-2"
+                    >
+                      <span>{emp.fullName}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {emp.employeeCode}
+                      </Badge>
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              {selectedEmployeeNames.length > 0 && (
+                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                  <strong>Selected:</strong> {selectedEmployeeNames.join(", ")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Date Range Selection */}
+          <div>
+            <Label className="text-base font-medium">Date Range</Label>
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startDate" className="text-sm text-muted-foreground">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  max={endDate || undefined}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endDate" className="text-sm text-muted-foreground">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || undefined}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Export Button */}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
+              Cancel
+            </Button>
+            <Button onClick={handleExport} disabled={isExporting || selectedEmployees.length === 0}>
+              {isExporting ? (
+                <>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 animate-pulse" />
+                  Generating Report...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Excel Report
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
