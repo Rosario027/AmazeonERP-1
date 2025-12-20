@@ -1874,6 +1874,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finance routes (Admin only)
+  app.get("/api/finance/admin/summary", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      // Get balances for the date range (handle undefined parameters gracefully)
+      const balances = await storage.getBalances({
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+      });
+
+      // Get withdrawals for the date range
+      const withdrawals = await storage.getCashWithdrawals({
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+      });
+
+      // Calculate totals (safely handle null/undefined values)
+      const totals = balances.reduce((acc, balance) => ({
+        opening: acc.opening + parseFloat(balance.opening?.toString() || "0"),
+        cashTotal: acc.cashTotal + parseFloat(balance.cashTotal?.toString() || "0"),
+        cardTotal: acc.cardTotal + parseFloat(balance.cardTotal?.toString() || "0"),
+        closing: acc.closing + parseFloat(balance.closing?.toString() || "0"),
+        withdrawalTotal: acc.withdrawalTotal, // Will be calculated separately
+      }), { opening: 0, cashTotal: 0, cardTotal: 0, closing: 0, withdrawalTotal: 0 });
+
+      totals.withdrawalTotal = withdrawals.reduce((sum, w) => sum + parseFloat(w.amount?.toString() || "0"), 0);
+
+      res.json({
+        balances,
+        withdrawals,
+        totals,
+      });
+    } catch (error) {
+      console.error("Finance summary error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/finance/withdrawals", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const withdrawals = await storage.getCashWithdrawals({
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+      });
+      res.json(withdrawals);
+    } catch (error) {
+      console.error("Get withdrawals error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/finance/sales-summary", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const salesSummary = await storage.getInvoicePaymentSummary({
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+      });
+      res.json(salesSummary);
+    } catch (error) {
+      console.error("Sales summary error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/finance/cash-in-shop", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      // Get all-time cash sales (empty filters = all time)
+      const allTimeSales = await storage.getInvoicePaymentSummary({});
+      const totalCashSales = allTimeSales.cashTotal;
+
+      // Get all-time withdrawals (empty filters = all time)
+      const allWithdrawals = await storage.getCashWithdrawals({});
+      const totalWithdrawals = allWithdrawals.reduce((sum, w) => sum + parseFloat(w.amount?.toString() || "0"), 0);
+
+      // Calculate available cash in shop
+      const cashInShop = totalCashSales - totalWithdrawals;
+
+      res.json({
+        totalCashSales,
+        totalWithdrawals,
+        cashInShop,
+      });
+    } catch (error) {
+      console.error("Cash in shop error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/finance/withdraw", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { amount, note } = req.body;
+      const user = (req as any).user;
+
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid withdrawal amount" });
+      }
+
+      const withdrawal = await storage.createCashWithdrawal({
+        adminId: user.userId,
+        amount: Number(amount).toFixed(2), // Ensure proper decimal formatting
+        note: note || null,
+      });
+
+      res.status(201).json(withdrawal);
+    } catch (error) {
+      console.error("Create withdrawal error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/finance/withdraw/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount, note } = req.body;
+
+      if (amount !== undefined && (isNaN(Number(amount)) || Number(amount) <= 0)) {
+        return res.status(400).json({ message: "Invalid withdrawal amount" });
+      }
+
+      const updateData: any = {};
+      if (amount !== undefined) updateData.amount = Number(amount).toFixed(2);
+      if (note !== undefined) updateData.note = note || null;
+
+      const withdrawal = await storage.updateCashWithdrawal(Number(id), updateData);
+      if (!withdrawal) {
+        return res.status(404).json({ message: "Withdrawal not found" });
+      }
+
+      res.json(withdrawal);
+    } catch (error) {
+      console.error("Update withdrawal error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.delete("/api/finance/withdraw/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteCashWithdrawal(Number(id));
+      if (!deleted) {
+        return res.status(404).json({ message: "Withdrawal not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete withdrawal error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
