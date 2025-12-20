@@ -133,8 +133,8 @@ export interface IStorage {
 
   // Customers
   getOrCreateCustomer(name: string, phone: string): Promise<Customer>;
-  getCustomers(): Promise<Customer[]>;
-  getCustomer(id: number): Promise<Customer | undefined>;
+  getCustomers(): Promise<CustomerWithStats[]>;
+  getCustomer(id: number): Promise<CustomerWithStats | undefined>;
   getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]>;
   getCustomerInvoices(customerId: number): Promise<Invoice[]>;
 }
@@ -1010,13 +1010,61 @@ export class DatabaseStorage implements IStorage {
     return customer;
   }
 
-  async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  async getCustomers(): Promise<CustomerWithStats[]> {
+    const allCustomers = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    
+    const result: CustomerWithStats[] = [];
+    
+    for (const customer of allCustomers) {
+      const customerInvoices = await db
+        .select()
+        .from(invoices)
+        .where(and(
+          eq(invoices.customerId, customer.id),
+          isNull(invoices.deletedAt)
+        ));
+
+      const totalPurchases = customerInvoices.length;
+      const totalSpent = customerInvoices.reduce((sum, inv) => sum + parseFloat(inv.grandTotal || '0'), 0);
+      const lastPurchase = customerInvoices.length > 0 
+        ? customerInvoices.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt
+        : null;
+
+      result.push({
+        ...customer,
+        totalPurchases,
+        totalSpent,
+        lastPurchase,
+      });
+    }
+
+    return result;
   }
 
-  async getCustomer(id: number): Promise<Customer | undefined> {
+  async getCustomer(id: number): Promise<CustomerWithStats | undefined> {
     const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-    return customer || undefined;
+    if (!customer) return undefined;
+
+    const customerInvoices = await db
+      .select()
+      .from(invoices)
+      .where(and(
+        eq(invoices.customerId, customer.id),
+        isNull(invoices.deletedAt)
+      ));
+
+    const totalPurchases = customerInvoices.length;
+    const totalSpent = customerInvoices.reduce((sum, inv) => sum + parseFloat(inv.grandTotal || '0'), 0);
+    const lastPurchase = customerInvoices.length > 0 
+      ? customerInvoices.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt
+      : null;
+
+    return {
+      ...customer,
+      totalPurchases,
+      totalSpent,
+      lastPurchase,
+    };
   }
 
   async getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]> {
@@ -1044,7 +1092,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions));
 
       const totalPurchases = customerInvoices.length;
-      const totalSpent = customerInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount || '0'), 0);
+      const totalSpent = customerInvoices.reduce((sum, inv) => sum + parseFloat(inv.grandTotal || '0'), 0);
       const lastPurchase = customerInvoices.length > 0 
         ? customerInvoices.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt
         : null;

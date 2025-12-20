@@ -2041,11 +2041,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/stats", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
-      const stats = await storage.getCustomerStats(
+      const customerStats = await storage.getCustomerStats(
         startDate as string | undefined,
         endDate as string | undefined
       );
-      res.json(stats);
+      
+      // Calculate stats for the dashboard
+      const start = startDate ? new Date(startDate as string) : new Date(0);
+      const end = endDate ? new Date(endDate as string) : new Date();
+      
+      // Count new customers in the period
+      const totalNewCustomers = customerStats.filter(c => {
+        const created = new Date(c.createdAt);
+        return created >= start && created <= end;
+      }).length;
+      
+      // Get top 3 invoices from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const allInvoices = await storage.getInvoices({ 
+        startDate: thirtyDaysAgo.toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0]
+      });
+      
+      const topInvoices = allInvoices
+        .filter(inv => !inv.deletedAt)
+        .sort((a, b) => parseFloat(b.grandTotal || '0') - parseFloat(a.grandTotal || '0'))
+        .slice(0, 3)
+        .map(inv => ({
+          id: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          customerName: inv.customerName,
+          grandTotal: inv.grandTotal,
+          createdAt: inv.createdAt,
+        }));
+      
+      res.json({
+        totalNewCustomers,
+        topInvoices,
+      });
     } catch (error) {
       console.error("Get customer stats error:", error);
       res.status(500).json({ message: "Server error" });

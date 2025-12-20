@@ -13,8 +13,9 @@ type Customer = {
   customerCode: string;
   name: string;
   phone: string;
-  totalOrders: number;
-  totalSpend: string;
+  totalPurchases: number;
+  totalSpent: number;
+  lastPurchase: string | null;
   createdAt: string;
 };
 
@@ -217,9 +218,9 @@ export default function AdminCustomers() {
                     <TableCell className="font-mono">{customer.customerCode}</TableCell>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{customer.phone}</TableCell>
-                    <TableCell className="text-right">{customer.totalOrders}</TableCell>
+                    <TableCell className="text-right">{customer.totalPurchases || 0}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      ₹{parseFloat(customer.totalSpend).toFixed(2)}
+                      ₹{(customer.totalSpent || 0).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -261,7 +262,7 @@ export default function AdminCustomers() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Lifetime Spend</p>
                   <p className="text-2xl font-bold">
-                    ₹{parseFloat(selectedCustomer.totalSpend).toFixed(2)}
+                    ₹{(selectedCustomer.totalSpent || 0).toFixed(2)}
                   </p>
                 </div>
               </div>
