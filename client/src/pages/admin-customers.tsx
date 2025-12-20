@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, TrendingUp, Search, X } from "lucide-react";
+import { Users, TrendingUp, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 // Helper to safely format currency
 const formatCurrency = (value: number | string | null | undefined): string => {
@@ -46,12 +46,35 @@ type CustomerStats = {
   }>;
 };
 
+type SortField = "customerCode" | "name" | "phone" | "totalPurchases" | "totalSpent";
+type SortDirection = "asc" | "desc";
+
 export default function AdminCustomers() {
   const [timePeriod, setTimePeriod] = useState<"today" | "week" | "month" | "custom">("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [minOrders, setMinOrders] = useState<string>("");
+  const [minSpend, setMinSpend] = useState<string>("");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 ml-1" />;
+    return sortDirection === "asc" 
+      ? <ArrowUp className="h-4 w-4 ml-1" /> 
+      : <ArrowDown className="h-4 w-4 ml-1" />;
+  };
 
   const getDateRange = () => {
     const now = new Date();
@@ -129,12 +152,45 @@ export default function AdminCustomers() {
     enabled: !!selectedCustomerId,
   });
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.customerCode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers
+    .filter((customer) => {
+      // Text search filter
+      const matchesSearch = 
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone.includes(searchTerm) ||
+        customer.customerCode.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Minimum orders filter
+      const matchesMinOrders = !minOrders || (customer.totalPurchases || 0) >= parseInt(minOrders);
+      
+      // Minimum spend filter
+      const matchesMinSpend = !minSpend || (customer.totalSpent || 0) >= parseFloat(minSpend);
+      
+      return matchesSearch && matchesMinOrders && matchesMinSpend;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case "customerCode":
+          comparison = a.customerCode.localeCompare(b.customerCode);
+          break;
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "phone":
+          comparison = a.phone.localeCompare(b.phone);
+          break;
+        case "totalPurchases":
+          comparison = (a.totalPurchases || 0) - (b.totalPurchases || 0);
+          break;
+        case "totalSpent":
+          comparison = (a.totalSpent || 0) - (b.totalSpent || 0);
+          break;
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
 
   const handleInvoiceClick = (invoiceId: number) => {
     window.open(`/print-invoice/${invoiceId}`, "_blank");
@@ -246,25 +302,63 @@ export default function AdminCustomers() {
       <Card>
         <CardHeader>
           <CardTitle>Customer Directory</CardTitle>
-          <CardDescription>Search and view all customers</CardDescription>
-          <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, phone, or customer code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                onClick={() => setSearchTerm("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+          <CardDescription>Search, filter and sort all customers</CardDescription>
+          <div className="space-y-4 mt-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, phone, or customer code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Min Orders:</span>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={minOrders}
+                  onChange={(e) => setMinOrders(e.target.value)}
+                  className="w-20"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Min Spend (₹):</span>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={minSpend}
+                  onChange={(e) => setMinSpend(e.target.value)}
+                  className="w-24"
+                />
+              </div>
+              {(minOrders || minSpend) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setMinOrders(""); setMinSpend(""); }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -278,11 +372,46 @@ export default function AdminCustomers() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone Number</TableHead>
-                  <TableHead className="text-right">Total Orders</TableHead>
-                  <TableHead className="text-right">Total Spend</TableHead>
+                  <TableHead>
+                    <button 
+                      className="flex items-center hover:text-foreground"
+                      onClick={() => handleSort("customerCode")}
+                    >
+                      Customer Code {getSortIcon("customerCode")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button 
+                      className="flex items-center hover:text-foreground"
+                      onClick={() => handleSort("name")}
+                    >
+                      Name {getSortIcon("name")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button 
+                      className="flex items-center hover:text-foreground"
+                      onClick={() => handleSort("phone")}
+                    >
+                      Phone Number {getSortIcon("phone")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button 
+                      className="flex items-center justify-end hover:text-foreground ml-auto"
+                      onClick={() => handleSort("totalPurchases")}
+                    >
+                      Total Orders {getSortIcon("totalPurchases")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button 
+                      className="flex items-center justify-end hover:text-foreground ml-auto"
+                      onClick={() => handleSort("totalSpent")}
+                    >
+                      Total Spend {getSortIcon("totalSpent")}
+                    </button>
+                  </TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
