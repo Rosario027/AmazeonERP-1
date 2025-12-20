@@ -1117,6 +1117,161 @@ function ViewStaffDialog({
   );
 }
 
+// Download Attendance Report Dialog
+function DownloadAttendanceReportDialog({
+  open,
+  onOpenChange,
+  employees
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employees: Employee[];
+}) {
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Initialize dates
+  useEffect(() => {
+    if (open) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setStartDate(firstDay.toISOString().split('T')[0]);
+      setEndDate(lastDay.toISOString().split('T')[0]);
+      setSelectedEmployeeIds(employees.map(e => e.id)); // Default select all
+    }
+  }, [open, employees]);
+
+  const handleDownload = async () => {
+    if (selectedEmployeeIds.length === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
+      return;
+    }
+    if (!startDate || !endDate) {
+      toast({ title: "Please select start and end dates", variant: "destructive" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/staff/attendance/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          employeeIds: selectedEmployeeIds,
+          startDate,
+          endDate
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to generate report");
+
+      // Handle file download
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Attendance_Report_${startDate}_${endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      onOpenChange(false);
+      toast({ title: "Report downloaded successfully" });
+    } catch (error) {
+      toast({ title: "Failed to download report", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const toggleAll = () => {
+    if (selectedEmployeeIds.length === employees.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(employees.map(e => e.id));
+    }
+  };
+
+  const toggleEmployee = (id: string) => {
+    if (selectedEmployeeIds.includes(id)) {
+      setSelectedEmployeeIds(prev => prev.filter(e => e !== id));
+    } else {
+      setSelectedEmployeeIds(prev => [...prev, id]);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Download Attendance Report</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Start Date</Label>
+              <Input 
+                type="date" 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)} 
+              />
+            </div>
+            <div>
+              <Label>End Date</Label>
+              <Input 
+                type="date" 
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)} 
+              />
+            </div>
+          </div>
+
+          <div className="border rounded-md p-3 max-h-[300px] overflow-y-auto">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b">
+              <Label>Employees ({selectedEmployeeIds.length})</Label>
+              <Button variant="ghost" size="sm" onClick={toggleAll}>
+                {selectedEmployeeIds.length === employees.length ? "Deselect All" : "Select All"}
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {employees.map(emp => (
+                <div key={emp.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`emp-${emp.id}`}
+                    checked={selectedEmployeeIds.includes(emp.id)}
+                    onChange={() => toggleEmployee(emp.id)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor={`emp-${emp.id}`} className="font-normal cursor-pointer">
+                    {emp.fullName}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleDownload} disabled={isGenerating}>
+              {isGenerating ? "Generating..." : "Download Excel"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Attendance Calendar Component with Manual Editing
 function AttendanceCalendar({ employees }: { employees: Employee[] }) {
   const qc = useQueryClient();
@@ -1125,6 +1280,7 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
   const [editingDay, setEditingDay] = useState<{ day: number; date: string } | null>(null);
   const [editStatus, setEditStatus] = useState<string>("present");
   const [editNotes, setEditNotes] = useState<string>("");
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   const { data: attendance, refetch } = useQuery({
     queryKey: ["attendance", selectedEmployee?.id, currentMonth.toISOString()],
@@ -1217,19 +1373,25 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
             <CardTitle>Attendance Calendar</CardTitle>
             <CardDescription>Click on any day to set attendance status</CardDescription>
           </div>
-          <Select 
-            value={selectedEmployee?.id || ""} 
-            onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Employee" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id}>{emp.fullName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowDownloadDialog(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Report
+            </Button>
+            <Select 
+              value={selectedEmployee?.id || ""} 
+              onValueChange={(id) => setSelectedEmployee(employees.find(e => e.id === id) || null)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select Employee" />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.fullName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -1353,6 +1515,11 @@ function AttendanceCalendar({ employees }: { employees: Employee[] }) {
           </>
         )}
       </CardContent>
+      <DownloadAttendanceReportDialog 
+        open={showDownloadDialog} 
+        onOpenChange={setShowDownloadDialog} 
+        employees={employees} 
+      />
     </Card>
   );
 }
