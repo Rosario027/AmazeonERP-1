@@ -1927,20 +1927,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/finance/sales-summary", authMiddleware, adminMiddleware, async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      const salesSummary = await storage.getInvoicePaymentSummary({
-        startDate: startDate as string | undefined,
-        endDate: endDate as string | undefined,
-      });
-      res.json(salesSummary);
-    } catch (error) {
-      console.error("Sales summary error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
   app.get("/api/finance/cash-in-shop", authMiddleware, adminMiddleware, async (req, res) => {
     try {
       // Get all-time cash sales (empty filters = all time)
