@@ -8,6 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, TrendingUp, Search, X } from "lucide-react";
 
+// Helper to safely format currency
+const formatCurrency = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined) return "0.00";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "0.00";
+  return num.toFixed(2);
+};
+
 type Customer = {
   id: number;
   customerCode: string;
@@ -61,22 +69,46 @@ export default function AdminCustomers() {
     };
   };
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading: customersLoading, error: customersError } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
 
   const { startDate, endDate } = getDateRange();
-  const { data: stats, isLoading: statsLoading } = useQuery<CustomerStats>({
-    queryKey: [`/api/customers/stats?startDate=${startDate}&endDate=${endDate}`],
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<CustomerStats>({
+    queryKey: ["/api/customers/stats", startDate, endDate],
+    queryFn: async () => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/customers/stats?startDate=${startDate}&endDate=${endDate}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    },
   });
 
   const { data: selectedCustomer } = useQuery<Customer>({
-    queryKey: [`/api/customers/${selectedCustomerId}`],
+    queryKey: ["/api/customers", selectedCustomerId],
+    queryFn: async () => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/customers/${selectedCustomerId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch customer");
+      return res.json();
+    },
     enabled: !!selectedCustomerId,
   });
 
   const { data: customerInvoices = [] } = useQuery<Invoice[]>({
-    queryKey: [`/api/customers/${selectedCustomerId}/invoices`],
+    queryKey: ["/api/customers", selectedCustomerId, "invoices"],
+    queryFn: async () => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/customers/${selectedCustomerId}/invoices`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch invoices");
+      return res.json();
+    },
     enabled: !!selectedCustomerId,
   });
 
@@ -99,6 +131,16 @@ export default function AdminCustomers() {
           <p className="text-muted-foreground">Track and manage your customer base</p>
         </div>
       </div>
+
+      {(customersError || statsError) && (
+        <Card className="border-red-500 bg-red-50">
+          <CardContent className="pt-4">
+            <p className="text-red-600">
+              Error loading data: {(customersError as Error)?.message || (statsError as Error)?.message}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -156,7 +198,7 @@ export default function AdminCustomers() {
                       <span className="text-blue-600 hover:underline">
                         {invoice.invoiceNumber}
                       </span>
-                      <span className="font-semibold">₹{parseFloat(invoice.grandTotal).toFixed(2)}</span>
+                      <span className="font-semibold">₹{formatCurrency(invoice.grandTotal)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{invoice.customerName}</p>
                   </button>
@@ -220,7 +262,7 @@ export default function AdminCustomers() {
                     <TableCell>{customer.phone}</TableCell>
                     <TableCell className="text-right">{customer.totalPurchases || 0}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      ₹{(customer.totalSpent || 0).toFixed(2)}
+                      ₹{formatCurrency(customer.totalSpent)}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -262,7 +304,7 @@ export default function AdminCustomers() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Lifetime Spend</p>
                   <p className="text-2xl font-bold">
-                    ₹{(selectedCustomer.totalSpent || 0).toFixed(2)}
+                    ₹{formatCurrency(selectedCustomer.totalSpent)}
                   </p>
                 </div>
               </div>
@@ -289,7 +331,7 @@ export default function AdminCustomers() {
                             {new Date(invoice.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
-                            ₹{parseFloat(invoice.grandTotal).toFixed(2)}
+                            ₹{formatCurrency(invoice.grandTotal)}
                           </TableCell>
                           <TableCell>
                             <Button
