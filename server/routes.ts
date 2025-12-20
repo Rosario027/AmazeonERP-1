@@ -2056,13 +2056,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return created >= start && created <= end;
       }).length;
       
-      // Get top 3 invoices from last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+      // Get top 3 invoices from selected period (use the same date range)
       const allInvoices = await storage.getInvoices({ 
-        startDate: thirtyDaysAgo.toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0]
+        startDate: startDate as string || new Date(0).toISOString().split('T')[0],
+        endDate: endDate as string || new Date().toISOString().split('T')[0]
       });
       
       const topInvoices = allInvoices

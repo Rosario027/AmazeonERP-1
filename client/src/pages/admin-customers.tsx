@@ -47,7 +47,9 @@ type CustomerStats = {
 };
 
 export default function AdminCustomers() {
-  const [timePeriod, setTimePeriod] = useState<"today" | "week" | "month">("month");
+  const [timePeriod, setTimePeriod] = useState<"today" | "week" | "month" | "custom">("month");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
 
@@ -61,12 +63,27 @@ export default function AdminCustomers() {
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     } else if (timePeriod === "month") {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (timePeriod === "custom" && customStartDate && customEndDate) {
+      return {
+        startDate: customStartDate,
+        endDate: customEndDate,
+      };
     }
 
     return {
       startDate: startDate.toISOString().split("T")[0],
       endDate: now.toISOString().split("T")[0],
     };
+  };
+
+  const getTimePeriodLabel = () => {
+    if (timePeriod === "today") return "Today";
+    if (timePeriod === "week") return "This Week";
+    if (timePeriod === "month") return "This Month";
+    if (timePeriod === "custom" && customStartDate && customEndDate) {
+      return `${customStartDate} to ${customEndDate}`;
+    }
+    return "Selected Period";
   };
 
   const { data: customers = [], isLoading: customersLoading, error: customersError } = useQuery<Customer[]>({
@@ -147,7 +164,7 @@ export default function AdminCustomers() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Time Period</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Select value={timePeriod} onValueChange={(value: any) => setTimePeriod(value)}>
               <SelectTrigger>
                 <SelectValue />
@@ -156,8 +173,25 @@ export default function AdminCustomers() {
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
                 <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
+            {timePeriod === "custom" && (
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  placeholder="Start Date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                />
+                <Input
+                  type="date"
+                  placeholder="End Date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -171,16 +205,14 @@ export default function AdminCustomers() {
               {statsLoading ? "..." : stats?.totalNewCustomers || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {timePeriod === "today" && "Today"}
-              {timePeriod === "week" && "This week"}
-              {timePeriod === "month" && "This month"}
+              {getTimePeriodLabel()}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top 3 Invoices (30 Days)</CardTitle>
+            <CardTitle className="text-sm font-medium">Top 3 Invoices ({getTimePeriodLabel()})</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
