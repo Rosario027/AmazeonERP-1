@@ -250,11 +250,39 @@ async function ensureSessionsSchema() {
   }
 }
 
+// Ensure customers table exists for customer management
+async function ensureCustomersSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id serial PRIMARY KEY,
+        customer_code text UNIQUE NOT NULL,
+        name text NOT NULL,
+        phone text NOT NULL,
+        created_at timestamptz DEFAULT now() NOT NULL,
+        UNIQUE(name, phone)
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);`);
+
+    // Add customer_id column to invoices if not exists
+    await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS customer_id integer REFERENCES customers(id);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customer_id);`);
+
+    log('✓ Customers schema ensured');
+  } catch (err) {
+    log('Failed to ensure customers schema: ' + String(err));
+  }
+}
+
 (async () => {
   try {
     await ensureSchemaUpdates();
     await ensureStaffSchema();
     await ensureSessionsSchema();
+    await ensureCustomersSchema();
   } catch (initErr) {
     log('FATAL: Schema initialization failed: ' + String(initErr));
     process.exit(1);

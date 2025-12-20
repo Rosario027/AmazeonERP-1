@@ -26,10 +26,22 @@ export const products = pgTable("products", {
   deletedAt: timestamp("deleted_at"),
 });
 
+// Customer Management
+export const customers = pgTable("customers", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  customerCode: text("customer_code").notNull().unique(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueNamePhone: uniqueIndex("unique_customer_name_phone").on(table.name, table.phone),
+}));
+
 export const invoices = pgTable("invoices", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   invoiceNumber: text("invoice_number").notNull().unique(),
   invoiceType: text("invoice_type").notNull(), // 'B2C' or 'B2B'
+  customerId: integer("customer_id").references(() => customers.id),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone"),
   customerGst: text("customer_gst"), // Only for B2B
@@ -205,8 +217,16 @@ export type Session = typeof sessions.$inferSelect;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 
 // Relations
-export const invoicesRelations = relations(invoices, ({ many }) => ({
+export const customersRelations = relations(customers, ({ many }) => ({
+  invoices: many(invoices),
+}));
+
+export const invoicesRelations = relations(invoices, ({ many, one }) => ({
   items: many(invoiceItems),
+  customer: one(customers, {
+    fields: [invoices.customerId],
+    references: [customers.id],
+  }),
 }));
 
 export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
@@ -228,6 +248,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertProductSchema = createInsertSchema(products).omit({
   createdAt: true,
   deletedAt: true,
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
@@ -272,6 +297,9 @@ export type InsertCashBalance = typeof cashBalances.$inferInsert;
 export type CashWithdrawal = typeof cashWithdrawals.$inferSelect;
 export type InsertCashWithdrawal = typeof cashWithdrawals.$inferInsert;
 
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
 // Extended types for frontend
 export type InvoiceWithItems = Invoice & {
   items: InvoiceItem[];
@@ -279,4 +307,9 @@ export type InvoiceWithItems = Invoice & {
 
 export type ProductWithQtySold = Product & {
   qtySold?: number;
+};
+
+export type CustomerWithStats = Customer & {
+  totalOrders: number;
+  totalSpend: string;
 };

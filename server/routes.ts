@@ -2012,6 +2012,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============ Customer Management Routes ============
+  
+  // Get all customers
+  app.get("/api/customers", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error("Get customers error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get customer statistics with optional date filters
+  app.get("/api/customers/stats", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const stats = await storage.getCustomerStats(
+        startDate as string | undefined,
+        endDate as string | undefined
+      );
+      res.json(stats);
+    } catch (error) {
+      console.error("Get customer stats error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get single customer
+  app.get("/api/customers/:id", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const customer = await storage.getCustomer(Number(id));
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Get customer error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get customer invoices
+  app.get("/api/customers/:id/invoices", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const customerInvoices = await storage.getCustomerInvoices(Number(id));
+      res.json(customerInvoices);
+    } catch (error) {
+      console.error("Get customer invoices error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

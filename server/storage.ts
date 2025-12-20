@@ -14,6 +14,7 @@ import {
   cashBalances,
   cashWithdrawals,
   sessions,
+  customers,
   type User,
   type InsertUser,
   type Product,
@@ -33,6 +34,9 @@ import {
   type InsertCashWithdrawal,
   type Session,
   type InsertSession,
+  type Customer,
+  type InsertCustomer,
+  type CustomerWithStats,
   employees,
   employeeAttendance,
   employeePurchases,
@@ -126,6 +130,13 @@ export interface IStorage {
   // Staff: Attendance
   listAttendance(employeeId: string, fromDate?: string, toDate?: string): Promise<EmployeeAttendance[]>;
   getAttendanceForExport(employeeIds: string[], fromDate: string, toDate: string): Promise<EmployeeAttendance[]>;
+
+  // Customers
+  getOrCreateCustomer(name: string, phone: string): Promise<Customer>;
+  getCustomers(): Promise<Customer[]>;
+  getCustomer(id: number): Promise<Customer | undefined>;
+  getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]>;
+  getCustomerInvoices(customerId: number): Promise<Invoice[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -965,6 +976,99 @@ export class DatabaseStorage implements IStorage {
       .update(sessions)
       .set({ isActive: false })
       .where(eq(sessions.userId, userId));
+  }
+
+  // Customer Management
+  async getOrCreateCustomer(name: string, phone: string): Promise<Customer> {
+    // Try to find existing customer by name and phone
+    const [existing] = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.name, name), eq(customers.phone, phone)));
+    
+    if (existing) {
+      return existing;
+    }
+
+    // Generate customer code (CUST-0001, CUST-0002, etc.)
+    const [maxResult] = await db
+      .select({ maxId: max(customers.id) })
+      .from(customers);
+    const nextId = (maxResult?.maxId || 0) + 1;
+    const customerCode = `CUST-${String(nextId).padStart(4, '0')}`;
+
+    // Create new customer
+    const [customer] = await db
+      .insert(customers)
+      .values({
+        customerCode,
+        name,
+        phone,
+      })
+      .returning();
+    
+    return customer;
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  }
+
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    return customer || undefined;
+  }
+
+  async getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]> {
+    // Get all customers with their invoice statistics
+    const allCustomers = await this.getCustomers();
+    
+    const stats: CustomerWithStats[] = [];
+    
+    for (const customer of allCustomers) {
+      const conditions: any[] = [
+        eq(invoices.customerId, customer.id),
+        isNull(invoices.deletedAt),
+      ];
+      
+      if (startDate) {
+        conditions.push(sql`DATE(${invoices.createdAt}) >= ${startDate}`);
+      }
+      if (endDate) {
+        conditions.push(sql`DATE(${invoices.createdAt}) <= ${endDate}`);
+      }
+
+      const customerInvoices = await db
+        .select()
+        .from(invoices)
+        .where(and(...conditions));
+
+      const totalPurchases = customerInvoices.length;
+      const totalSpent = customerInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount || '0'), 0);
+      const lastPurchase = customerInvoices.length > 0 
+        ? customerInvoices.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt
+        : null;
+
+      stats.push({
+        ...customer,
+        totalPurchases,
+        totalSpent,
+        lastPurchase,
+      });
+    }
+
+    return stats;
+  }
+
+  async getCustomerInvoices(customerId: number): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(and(
+        eq(invoices.customerId, customerId),
+        isNull(invoices.deletedAt)
+      ))
+      .orderBy(desc(invoices.createdAt));
   }
 }
 
