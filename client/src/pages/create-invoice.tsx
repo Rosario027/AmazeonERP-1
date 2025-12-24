@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,8 +129,8 @@ export default function CreateInvoice() {
   });
 
   // Debounced customer phone search
-  const fetchCustomerByPhone = useMemo(() => {
-    return debounce(async (phone: string) => {
+  const fetchCustomerByPhone = useCallback(
+    debounce(async (phone: string) => {
       if (phone.length !== 10) {
         return;
       }
@@ -145,8 +145,9 @@ export default function CreateInvoice() {
       } catch (error) {
         console.error("Error fetching customer:", error);
       }
-    }, 500);
-  }, []);
+    }, 300),
+    []
+  );
 
   const cashGstMode: GstMode = (settings.find(s => s.key === "cash_gst_mode")?.value as GstMode) || "inclusive";
   const onlineGstMode: GstMode = (settings.find(s => s.key === "online_gst_mode")?.value as GstMode) || "exclusive";

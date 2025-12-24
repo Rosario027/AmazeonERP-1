@@ -84,7 +84,7 @@ export function InvoiceItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" data-testid="dialog-add-item">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" data-testid="dialog-add-item">
         <DialogHeader>
           <DialogTitle>Add Item</DialogTitle>
         </DialogHeader>
