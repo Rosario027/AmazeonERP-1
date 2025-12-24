@@ -543,7 +543,7 @@ export default function CreateInvoice() {
                     data-testid="input-customer-name"
                   />
                   {autoFilledName && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded">
                       Auto-filled
                     </div>
                   )}
