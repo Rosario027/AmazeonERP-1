@@ -134,6 +134,7 @@ export interface IStorage {
   // Customers
   getOrCreateCustomer(name: string, phone: string): Promise<Customer>;
   getCustomers(): Promise<CustomerWithStats[]>;
+  getCustomersByPhone(phone: string): Promise<Customer[]>;
   getCustomer(id: number): Promise<CustomerWithStats | undefined>;
   getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]>;
   getCustomerInvoices(customerId: number): Promise<Invoice[]>;
@@ -1008,6 +1009,17 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return customer;
+  }
+
+  async getCustomersByPhone(phone: string): Promise<Customer[]> {
+    // Search for customers by phone number
+    const matchingCustomers = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, phone))
+      .orderBy(desc(customers.createdAt));
+
+    return matchingCustomers;
   }
 
   async getCustomers(): Promise<CustomerWithStats[]> {
