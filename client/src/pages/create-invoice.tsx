@@ -14,6 +14,7 @@ import { InvoiceReceipt } from "@/components/InvoiceReceipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { calculateInvoiceItem, type GstMode } from "@shared/gstCalculations";
+import { debounce } from "lodash-es";
 
 interface InvoiceItem {
   productId: number | null;
@@ -46,6 +47,7 @@ export default function CreateInvoice() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online" | "Cash+Card">("Cash");
+  const [autoFilledName, setAutoFilledName] = useState(false);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [invoiceNumberForEdit, setInvoiceNumberForEdit] = useState("");
@@ -125,6 +127,27 @@ export default function CreateInvoice() {
   const { data: settings = [] } = useQuery<Array<{ key: string; value: string }>>({
     queryKey: ["/api/settings"],
   });
+
+  // Debounced customer phone search
+  const fetchCustomerByPhone = async (phone: string) => {
+    if (phone.length !== 10) {
+      return null;
+    }
+    
+    try {
+      const response = await apiRequest("GET", `/api/customers/search?phone=${phone}`);
+      const data = await response.json();
+      return data.customer;
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      return null;
+    }
+  };
+
+  // Use debounce to avoid excessive API calls while typing
+  const debouncedFetchCustomer = useMemo(() => {
+    return debounce(fetchCustomerByPhone, 500);
+  }, []) as ((phone: string) => Promise<{ name: string } | null>) | undefined;
 
   const cashGstMode: GstMode = (settings.find(s => s.key === "cash_gst_mode")?.value as GstMode) || "inclusive";
   const onlineGstMode: GstMode = (settings.find(s => s.key === "online_gst_mode")?.value as GstMode) || "exclusive";
@@ -429,14 +452,24 @@ export default function CreateInvoice() {
                 <Label htmlFor="customerName" className="text-sm font-medium">
                   Customer Name <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter customer name"
-                  className="h-12"
-                  data-testid="input-customer-name"
-                />
+                <div className="relative">
+                  <Input
+                    id="customerName"
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      setAutoFilledName(false); // Clear auto-filled flag when user edits
+                    }}
+                    placeholder="Enter customer name"
+                    className="h-12"
+                    data-testid="input-customer-name"
+                  />
+                  {autoFilledName && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                      Auto-filled
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -446,7 +479,21 @@ export default function CreateInvoice() {
                 <Input
                   id="customerPhone"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  onChange={(e) => {
+                    const phoneValue = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setCustomerPhone(phoneValue);
+
+                    // Only search if we have exactly 10 digits
+                    if (phoneValue.length === 10 && debouncedFetchCustomer) {
+                      debouncedFetchCustomer(phoneValue).then((foundCustomer: { name: string } | null | undefined) => {
+                        if (foundCustomer && !customerName) {
+                          // Only auto-fill if customer name is empty
+                          setCustomerName(foundCustomer.name);
+                          setAutoFilledName(true);
+                        }
+                      });
+                    }
+                  }}
                   placeholder="10-digit mobile number"
                   className="h-12"
                   data-testid="input-customer-phone"
