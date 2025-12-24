@@ -2115,29 +2115,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/search", authMiddleware, async (req, res) => {
     try {
       const { phone } = req.query;
-      console.log("[Customer Search] Request received for phone:", phone);
 
       if (!phone || typeof phone !== 'string') {
-        console.log("[Customer Search] Invalid phone parameter");
         return res.status(400).json({ message: "Phone number is required" });
       }
 
       // Search for customer by phone number
-      console.log("[Customer Search] Searching in database...");
       const customers = await storage.getCustomersByPhone(phone);
-      console.log("[Customer Search] Found", customers.length, "customer(s)");
 
       if (customers.length === 0) {
-        console.log("[Customer Search] No customer found, returning null");
         return res.json({ customer: null });
       }
 
       // Return the first matching customer (phone numbers should be unique)
-      console.log("[Customer Search] Returning customer:", customers[0].name);
       res.json({ customer: customers[0] });
     } catch (error) {
-      console.error("[Customer Search] Error:", error);
-      res.status(500).json({ message: "Server error", error: String(error) });
+      console.error("Customer search error:", error);
+      res.status(500).json({ message: "Server error" });
     }
   });
 

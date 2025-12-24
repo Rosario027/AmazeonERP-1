@@ -140,21 +140,17 @@ export default function CreateInvoice() {
       return;
     }
     
-    console.log("[Customer Search] Starting search for phone:", customerPhone);
     setIsSearching(true);
     setIsNewCustomer(false);
     setAutoFilledName(false);
     
     try {
       const token = localStorage.getItem("auth_token");
-      console.log("[Customer Search] Auth token present:", !!token);
       const response = await fetch(`/api/customers/search?phone=${customerPhone}`, {
         method: "GET",
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
         credentials: "include",
       });
-      
-      console.log("[Customer Search] Response status:", response.status, response.statusText);
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -165,29 +161,24 @@ export default function CreateInvoice() {
           });
           return;
         }
-        const errorText = await response.text();
-        console.error("[Customer Search] Server error:", response.status, errorText);
         throw new Error(`Server error: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log("[Customer Search] Response data:", data);
       
       if (data.customer) {
-        console.log("[Customer Search] Customer found:", data.customer.name);
         setCustomerName(data.customer.name);
         setAutoFilledName(true);
         setIsNewCustomer(false);
       } else {
-        console.log("[Customer Search] No customer found - marking as new");
         setIsNewCustomer(true);
         setCustomerName("");
       }
     } catch (error: any) {
-      console.error("[Customer Search] Exception:", error);
+      console.error("Error fetching customer:", error);
       toast({
         title: "Error",
-        description: "Failed to search for customer. Check console for details.",
+        description: "Failed to search for customer. Please try again.",
         variant: "destructive",
       });
     } finally {
