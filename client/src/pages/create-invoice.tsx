@@ -145,7 +145,25 @@ export default function CreateInvoice() {
     setAutoFilledName(false);
     
     try {
-      const response = await apiRequest("GET", `/api/customers/search?phone=${customerPhone}`);
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`/api/customers/search?phone=${customerPhone}`, {
+        method: "GET",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session Expired",
+            description: "Please login again",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
       const data = await response.json();
       if (data.customer) {
         setCustomerName(data.customer.name);
@@ -155,11 +173,11 @@ export default function CreateInvoice() {
         setIsNewCustomer(true);
         setCustomerName("");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching customer:", error);
       toast({
         title: "Error",
-        description: "Failed to search for customer",
+        description: "Failed to search for customer. Please try again.",
         variant: "destructive",
       });
     } finally {
