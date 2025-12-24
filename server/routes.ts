@@ -2084,6 +2084,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search customer by phone number (for auto-filling customer name in billing)
+  app.get("/api/customers/search", authMiddleware, async (req, res) => {
+    try {
+      const { phone } = req.query;
+
+      if (!phone || typeof phone !== 'string') {
+        return res.status(400).json({ message: "Phone number is required" });
+      }
+
+      // Search for customer by phone number
+      const customers = await storage.getCustomersByPhone(phone);
+
+      if (customers.length === 0) {
+        return res.json({ customer: null });
+      }
+
+      // Return the first matching customer (phone numbers should be unique)
+      res.json({ customer: customers[0] });
+    } catch (error) {
+      console.error("Customer search error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Get single customer
   app.get("/api/customers/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
@@ -2107,30 +2131,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(customerInvoices);
     } catch (error) {
       console.error("Get customer invoices error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Search customer by phone number (for auto-filling customer name in billing)
-  app.get("/api/customers/search", authMiddleware, async (req, res) => {
-    try {
-      const { phone } = req.query;
-
-      if (!phone || typeof phone !== 'string') {
-        return res.status(400).json({ message: "Phone number is required" });
-      }
-
-      // Search for customer by phone number
-      const customers = await storage.getCustomersByPhone(phone);
-
-      if (customers.length === 0) {
-        return res.json({ customer: null });
-      }
-
-      // Return the first matching customer (phone numbers should be unique)
-      res.json({ customer: customers[0] });
-    } catch (error) {
-      console.error("Customer search error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
