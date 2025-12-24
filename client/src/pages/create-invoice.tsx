@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Printer, Save } from "lucide-react";
+import { Plus, Trash2, Printer, Save, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -14,7 +14,6 @@ import { InvoiceReceipt } from "@/components/InvoiceReceipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { calculateInvoiceItem, type GstMode } from "@shared/gstCalculations";
-import { debounce } from "lodash-es";
 
 interface InvoiceItem {
   productId: number | null;
@@ -48,6 +47,8 @@ export default function CreateInvoice() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online" | "Cash+Card">("Cash");
   const [autoFilledName, setAutoFilledName] = useState(false);
+  const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [invoiceNumberForEdit, setInvoiceNumberForEdit] = useState("");
@@ -128,26 +129,43 @@ export default function CreateInvoice() {
     queryKey: ["/api/settings"],
   });
 
-  // Debounced customer phone search
-  const fetchCustomerByPhone = useCallback(
-    debounce(async (phone: string) => {
-      if (phone.length !== 10) {
-        return;
+  // Fetch customer by phone number
+  const fetchCustomerByPhone = async () => {
+    if (customerPhone.length !== 10) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    setIsNewCustomer(false);
+    setAutoFilledName(false);
+    
+    try {
+      const response = await apiRequest("GET", `/api/customers/search?phone=${customerPhone}`);
+      const data = await response.json();
+      if (data.customer) {
+        setCustomerName(data.customer.name);
+        setAutoFilledName(true);
+        setIsNewCustomer(false);
+      } else {
+        setIsNewCustomer(true);
+        setCustomerName("");
       }
-      
-      try {
-        const response = await apiRequest("GET", `/api/customers/search?phone=${phone}`);
-        const data = await response.json();
-        if (data.customer) {
-          setCustomerName(data.customer.name);
-          setAutoFilledName(true);
-        }
-      } catch (error) {
-        console.error("Error fetching customer:", error);
-      }
-    }, 300),
-    []
-  );
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to search for customer",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const cashGstMode: GstMode = (settings.find(s => s.key === "cash_gst_mode")?.value as GstMode) || "inclusive";
   const onlineGstMode: GstMode = (settings.find(s => s.key === "online_gst_mode")?.value as GstMode) || "exclusive";
@@ -458,11 +476,8 @@ export default function CreateInvoice() {
                   onChange={(e) => {
                     const phoneValue = e.target.value.replace(/\D/g, "").slice(0, 10);
                     setCustomerPhone(phoneValue);
-
-                    // Only search if we have exactly 10 digits
-                    if (phoneValue.length === 10) {
-                      fetchCustomerByPhone(phoneValue);
-                    }
+                    setIsNewCustomer(false);
+                    setAutoFilledName(false);
                   }}
                   placeholder="10-digit mobile number"
                   className="h-12"
@@ -472,16 +487,37 @@ export default function CreateInvoice() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="customerName" className="text-sm font-medium">
-                  Customer Name <span className="text-destructive">*</span>
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="customerName" className="text-sm font-medium">
+                    Customer Name <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {isNewCustomer && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                        New Customer
+                      </Badge>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchCustomerByPhone}
+                      disabled={customerPhone.length !== 10 || isSearching}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Search className="h-3 w-3 mr-1" />
+                      {isSearching ? "Searching..." : "Fetch Name"}
+                    </Button>
+                  </div>
+                </div>
                 <div className="relative">
                   <Input
                     id="customerName"
                     value={customerName}
                     onChange={(e) => {
                       setCustomerName(e.target.value);
-                      setAutoFilledName(false); // Clear auto-filled flag when user edits
+                      setAutoFilledName(false);
+                      setIsNewCustomer(false);
                     }}
                     placeholder="Enter customer name"
                     className="h-12"
