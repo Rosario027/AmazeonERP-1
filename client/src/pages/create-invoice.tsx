@@ -129,25 +129,24 @@ export default function CreateInvoice() {
   });
 
   // Debounced customer phone search
-  const fetchCustomerByPhone = async (phone: string) => {
-    if (phone.length !== 10) {
-      return null;
-    }
-    
-    try {
-      const response = await apiRequest("GET", `/api/customers/search?phone=${phone}`);
-      const data = await response.json();
-      return data.customer;
-    } catch (error) {
-      console.error("Error fetching customer:", error);
-      return null;
-    }
-  };
-
-  // Use debounce to avoid excessive API calls while typing
-  const debouncedFetchCustomer = useMemo(() => {
-    return debounce(fetchCustomerByPhone, 500);
-  }, []) as ((phone: string) => Promise<{ name: string } | null>) | undefined;
+  const fetchCustomerByPhone = useMemo(() => {
+    return debounce(async (phone: string) => {
+      if (phone.length !== 10) {
+        return;
+      }
+      
+      try {
+        const response = await apiRequest("GET", `/api/customers/search?phone=${phone}`);
+        const data = await response.json();
+        if (data.customer) {
+          setCustomerName(data.customer.name);
+          setAutoFilledName(true);
+        }
+      } catch (error) {
+        console.error("Error fetching customer:", error);
+      }
+    }, 500);
+  }, []);
 
   const cashGstMode: GstMode = (settings.find(s => s.key === "cash_gst_mode")?.value as GstMode) || "inclusive";
   const onlineGstMode: GstMode = (settings.find(s => s.key === "online_gst_mode")?.value as GstMode) || "exclusive";
@@ -449,6 +448,29 @@ export default function CreateInvoice() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
+                <Label htmlFor="customerPhone" className="text-sm font-medium">
+                  Customer Number <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="customerPhone"
+                  value={customerPhone}
+                  onChange={(e) => {
+                    const phoneValue = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setCustomerPhone(phoneValue);
+
+                    // Only search if we have exactly 10 digits
+                    if (phoneValue.length === 10) {
+                      fetchCustomerByPhone(phoneValue);
+                    }
+                  }}
+                  placeholder="10-digit mobile number"
+                  className="h-12"
+                  data-testid="input-customer-phone"
+                  maxLength={10}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="customerName" className="text-sm font-medium">
                   Customer Name <span className="text-destructive">*</span>
                 </Label>
@@ -470,35 +492,6 @@ export default function CreateInvoice() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="customerPhone" className="text-sm font-medium">
-                  Customer Number <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="customerPhone"
-                  value={customerPhone}
-                  onChange={(e) => {
-                    const phoneValue = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    setCustomerPhone(phoneValue);
-
-                    // Only search if we have exactly 10 digits
-                    if (phoneValue.length === 10 && debouncedFetchCustomer) {
-                      debouncedFetchCustomer(phoneValue).then((foundCustomer: { name: string } | null | undefined) => {
-                        if (foundCustomer && !customerName) {
-                          // Only auto-fill if customer name is empty
-                          setCustomerName(foundCustomer.name);
-                          setAutoFilledName(true);
-                        }
-                      });
-                    }
-                  }}
-                  placeholder="10-digit mobile number"
-                  className="h-12"
-                  data-testid="input-customer-phone"
-                  maxLength={10}
-                />
               </div>
 
               <div className="space-y-2 hidden">
