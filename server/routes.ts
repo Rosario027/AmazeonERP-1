@@ -293,6 +293,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Customer requirements view
+  app.get("/api/admin/customer-requirements", authMiddleware, adminMiddleware, async (_req, res) => {
+    try {
+      const invoices = await storage.getInvoicesWithRequirements();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching customer requirements:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Admin: Toggle fulfillment status
+  app.patch("/api/invoices/:id/fulfillment", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { fulfilled } = req.body;
+      const invoice = await storage.updateInvoiceRequirementFulfillment(id, !!fulfilled);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error updating fulfillment:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   app.post("/api/invoices", authMiddleware, async (req, res) => {
     try {
       const { invoiceType, customerName, customerPhone, customerGst, paymentMode, gstMode, items, customerRequirements } = req.body;
