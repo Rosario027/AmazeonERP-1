@@ -491,6 +491,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/customer-requirements", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const invoices = await storage.getInvoicesWithRequirements();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching customer requirements:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/invoices/:id/fulfillment", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { fulfilled } = req.body;
+      const invoice = await storage.updateInvoiceRequirementFulfillment(id, !!fulfilled);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error updating fulfillment:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Expenses
   // GET: authenticated users see only their own expenses; admins see all
   app.get("/api/expenses", authMiddleware, async (req, res) => {

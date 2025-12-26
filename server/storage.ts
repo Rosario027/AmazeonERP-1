@@ -138,6 +138,8 @@ export interface IStorage {
   getCustomer(id: number): Promise<CustomerWithStats | undefined>;
   getCustomerStats(startDate?: string, endDate?: string): Promise<CustomerWithStats[]>;
   getCustomerInvoices(customerId: number): Promise<Invoice[]>;
+  getInvoicesWithRequirements(): Promise<Invoice[]>;
+  updateInvoiceRequirementFulfillment(id: number, fulfilled: boolean): Promise<Invoice | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -332,6 +334,27 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(invoices)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(eq(invoices.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getInvoicesWithRequirements(): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(and(
+        isNull(invoices.deletedAt),
+        sql`${invoices.customerRequirements} IS NOT NULL`,
+        sql`${invoices.customerRequirements} != ''`
+      ))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async updateInvoiceRequirementFulfillment(id: number, fulfilled: boolean): Promise<Invoice | undefined> {
+    const [updated] = await db
+      .update(invoices)
+      .set({ requirementsFulfilled: fulfilled, updatedAt: new Date() })
       .where(eq(invoices.id, id))
       .returning();
     return updated || undefined;

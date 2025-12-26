@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, TrendingUp, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Users, TrendingUp, Search, X, ArrowUpDown, ArrowUp, ArrowDown, ClipboardCheck, ClipboardList } from "lucide-react";
 
 // Helper to safely format currency
 const formatCurrency = (value: number | string | null | undefined): string => {
@@ -33,7 +36,9 @@ type Invoice = {
   grandTotal: string;
   createdAt: string;
   customerName: string;
+  customerPhone?: string | null;
   customerRequirements?: string | null;
+  requirementsFulfilled?: boolean;
 };
 
 type CustomerStats = {
@@ -60,6 +65,33 @@ export default function AdminCustomers() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [minOrders, setMinOrders] = useState<string>("");
   const [minSpend, setMinSpend] = useState<string>("");
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<"all" | "fulfilled" | "open">("all");
+  const { toast } = useToast();
+
+  const { data: requirements = [], isLoading: requirementsLoading } = useQuery<Invoice[]>({
+    queryKey: ["/api/admin/customer-requirements"],
+  });
+
+  const toggleFulfillmentMutation = useMutation({
+    mutationFn: async ({ invoiceId, fulfilled }: { invoiceId: number; fulfilled: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/invoices/${invoiceId}/fulfillment`, { fulfilled });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/customer-requirements"] });
+      toast({
+        title: "Status Updated",
+        description: "Requirement fulfillment status has been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -197,6 +229,21 @@ export default function AdminCustomers() {
     window.open(`/print-invoice/${invoiceId}`, "_blank");
   };
 
+  const filteredAndSortedRequirements = requirements
+    .filter((req) => {
+      if (fulfillmentFilter === "fulfilled") return req.requirementsFulfilled;
+      if (fulfillmentFilter === "open") return !req.requirementsFulfilled;
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by fulfillment status (open first)
+      if (a.requirementsFulfilled !== b.requirementsFulfilled) {
+        return a.requirementsFulfilled ? 1 : -1;
+      }
+      // Then by date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -299,6 +346,105 @@ export default function AdminCustomers() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Customer Requirement Fulfillment</CardTitle>
+            <CardDescription>Manage special customer requirements from bills</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground font-medium">Filter:</span>
+            <Select 
+              value={fulfillmentFilter} 
+              onValueChange={(v: any) => setFulfillmentFilter(v)}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Requests" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Requests</SelectItem>
+                <SelectItem value="open">Open Only</SelectItem>
+                <SelectItem value="fulfilled">Fulfilled Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {requirementsLoading ? (
+            <div className="text-center py-8">Loading requirements...</div>
+          ) : filteredAndSortedRequirements.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+              <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-20" />
+              <p>No customer requirements found matching the current filter.</p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead>Requirement Message</TableHead>
+                    <TableHead className="w-[150px]">Bill Ref</TableHead>
+                    <TableHead className="w-[150px]">Phone Number</TableHead>
+                    <TableHead className="w-[150px]">Date</TableHead>
+                    <TableHead className="w-[80px] text-center">Done</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedRequirements.map((req) => (
+                    <TableRow 
+                      key={req.id} 
+                      className={req.requirementsFulfilled ? "bg-muted/30 opacity-70" : ""}
+                    >
+                      <TableCell>
+                        {req.requirementsFulfilled ? (
+                          <div className="flex items-center text-green-600 text-xs font-medium gap-1">
+                            <ClipboardCheck className="h-3 w-3" />
+                            Fulfilled
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-amber-600 text-xs font-medium gap-1">
+                            <ClipboardList className="h-3 w-3" />
+                            Open
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium whitespace-pre-wrap">
+                        {req.customerRequirements}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => handleInvoiceClick(req.id)}
+                          className="text-blue-600 hover:underline font-mono text-sm"
+                        >
+                          {req.invoiceNumber}
+                        </button>
+                      </TableCell>
+                      <TableCell>{req.customerPhone || "N/A"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(req.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={req.requirementsFulfilled}
+                          onCheckedChange={(checked) => 
+                            toggleFulfillmentMutation.mutate({ 
+                              invoiceId: req.id, 
+                              fulfilled: !!checked 
+                            })
+                          }
+                          disabled={toggleFulfillmentMutation.isPending}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

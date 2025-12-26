@@ -65,7 +65,8 @@ async function ensureSchemaUpdates() {
 
     // Add customer requirements column to invoices
     await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS customer_requirements text;`);
-    log("✓ Ensured invoices customer_requirements column");
+    await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS requirements_fulfilled boolean DEFAULT false NOT NULL;`);
+    log("✓ Ensured invoices customer_requirements and fulfillment columns");
 
     // Backfill existing invoices based on payment mode
     // Update Cash invoices
