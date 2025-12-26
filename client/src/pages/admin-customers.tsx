@@ -33,6 +33,7 @@ type Invoice = {
   grandTotal: string;
   createdAt: string;
   customerName: string;
+  customerRequirements?: string | null;
 };
 
 type CustomerStats = {
@@ -481,6 +482,7 @@ export default function AdminCustomers() {
                         <TableHead>Invoice Number</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Requirements</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -493,6 +495,9 @@ export default function AdminCustomers() {
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             ₹{formatCurrency(invoice.grandTotal)}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                            {invoice.customerRequirements || "-"}
                           </TableCell>
                           <TableCell>
                             <Button

@@ -63,6 +63,10 @@ async function ensureSchemaUpdates() {
     await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS card_amount numeric(12, 2) DEFAULT 0 NOT NULL;`);
     log("✓ Ensured invoices payment split columns");
 
+    // Add customer requirements column to invoices
+    await pool.query(`ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS customer_requirements text;`);
+    log("✓ Ensured invoices customer_requirements column");
+
     // Backfill existing invoices based on payment mode
     // Update Cash invoices
     const cashResult = await pool.query(`
