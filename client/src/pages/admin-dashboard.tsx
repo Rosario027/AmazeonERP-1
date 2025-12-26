@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Package, ShoppingCart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { MaskedNumber } from "@/components/masked-number";
 
 interface DashboardStats {
   todaySales: number;
@@ -119,9 +120,12 @@ export default function AdminDashboard() {
                     <card.icon className={`h-5 w-5 ${card.color}`} />
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-3xl font-bold ${card.color}`} data-testid={`text-${card.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                      ₹{card.value.toFixed(2)}
-                    </div>
+                    <MaskedNumber
+                      value={card.value}
+                      prefix="₹"
+                      isCurrency={card.isCurrency}
+                      className={`text-3xl font-bold ${card.color}`}
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -144,9 +148,12 @@ export default function AdminDashboard() {
                     <card.icon className={`h-5 w-5 ${card.color}`} />
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-3xl font-bold ${card.color}`} data-testid={`text-${card.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                      {card.value.toLocaleString()} units
-                    </div>
+                    <MaskedNumber
+                      value={card.value}
+                      suffix=" units"
+                      isCurrency={card.isCurrency}
+                      className={`text-3xl font-bold ${card.color}`}
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -169,9 +176,12 @@ export default function AdminDashboard() {
                     <card.icon className={`h-5 w-5 ${card.color}`} />
                   </CardHeader>
                   <CardContent>
-                    <div className={`text-3xl font-bold ${card.color}`} data-testid={`text-${card.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                      ₹{card.value.toFixed(2)}
-                    </div>
+                    <MaskedNumber
+                      value={card.value}
+                      prefix="₹"
+                      isCurrency={card.isCurrency}
+                      className={`text-3xl font-bold ${card.color}`}
+                    />
                   </CardContent>
                 </Card>
               ))}
