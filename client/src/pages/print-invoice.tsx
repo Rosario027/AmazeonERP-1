@@ -280,6 +280,7 @@ export default function PrintInvoice() {
         <div style={{ textAlign: "center", fontSize: "10px", marginTop: "12px" }}>
           <div>Thank you for shopping</div>
           <div style={{ marginTop: "4px" }}>Visit again</div>
+          <div style={{ marginTop: "4px" }}>NO RETURN. NO EXCHANGE</div>
         </div>
       </div>
     </div>
