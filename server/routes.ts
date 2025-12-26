@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", authMiddleware, async (req, res) => {
     try {
-      const { invoiceType, customerName, customerPhone, customerGst, paymentMode, gstMode, items } = req.body;
+      const { invoiceType, customerName, customerPhone, customerGst, paymentMode, gstMode, items, customerRequirements } = req.body;
 
       if (!invoiceType || !customerName || !paymentMode || !gstMode || !items || items.length === 0) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -372,6 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grandTotal: roundedGrandTotal.toString(),
           cashAmount: normalizedCashAmount.toFixed(2),
           cardAmount: normalizedCardAmount.toFixed(2),
+          customerRequirements: customerRequirements || null,
           customerId,
         },
         invoiceItems
@@ -387,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/invoices/:id", authMiddleware, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { customerName, customerPhone, customerGst, paymentMode, items } = req.body;
+      const { customerName, customerPhone, customerGst, paymentMode, items, customerRequirements } = req.body;
 
       // Recalculate totals if items are provided
       let updateData: any = {};
@@ -446,6 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           grandTotal: roundedGrandTotal.toString(),
           cashAmount: normalizedCashAmount.toFixed(2),
           cardAmount: normalizedCardAmount.toFixed(2),
+          customerRequirements: customerRequirements || null,
         };
 
         const invoice = await storage.updateInvoice(id, updateData, invoiceItems);
@@ -456,7 +458,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json(invoice);
       } else {
-        updateData = { customerName, customerPhone: customerPhone || null, customerGst, paymentMode };
+        updateData = { 
+          customerName, 
+          customerPhone: customerPhone || null, 
+          customerGst, 
+          paymentMode,
+          customerRequirements: customerRequirements || null,
+        };
         const invoice = await storage.updateInvoice(id, updateData);
 
         if (!invoice) {

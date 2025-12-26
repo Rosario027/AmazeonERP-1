@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Printer, Save, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ export default function CreateInvoice() {
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerRequirements, setCustomerRequirements] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online" | "Cash+Card">("Cash");
   const [autoFilledName, setAutoFilledName] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
@@ -65,6 +67,7 @@ export default function CreateInvoice() {
     if (newTimestamp && !isEditing && newTimestamp !== lastResetTimestamp.current) {
       lastResetTimestamp.current = newTimestamp;
       setCustomerName("");
+      setCustomerRequirements("");
       setPaymentMode("Cash");
       setItems([]);
       setDialogOpen(false);
@@ -82,6 +85,7 @@ export default function CreateInvoice() {
     if (existingInvoice && isEditing) {
       setCustomerName(existingInvoice.customerName || "");
       setCustomerPhone(existingInvoice.customerPhone || "");
+      setCustomerRequirements(existingInvoice.customerRequirements || "");
       setPaymentMode(existingInvoice.paymentMode || "Cash");
       setInvoiceNumberForEdit(existingInvoice.invoiceNumber || "");
       setStoredGstMode(existingInvoice.gstMode || "inclusive");
@@ -348,6 +352,7 @@ export default function CreateInvoice() {
       if (!isEditing) {
         setCustomerName("");
         setCustomerPhone("");
+        setCustomerRequirements("");
         setPaymentMode("Cash");
         setItems([]);
         setInvoiceNumberForEdit("");
@@ -398,6 +403,7 @@ export default function CreateInvoice() {
       invoiceType: "B2C",
       customerName,
       customerPhone: customerPhone.replace(/\D/g, ""),
+      customerRequirements,
       paymentMode,
       gstMode,
       cashAmount: paymentMode === "Cash+Card" ? cashAmount : (paymentMode === "Cash" ? roundedGrandTotal : 0),
@@ -653,6 +659,30 @@ export default function CreateInvoice() {
         </div>
 
         <div className="lg:col-span-1">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Customer Requirements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="customerRequirements" className="text-sm font-medium">
+                  Message or Product Request
+                </Label>
+                <Textarea
+                  id="customerRequirements"
+                  value={customerRequirements}
+                  onChange={(e) => setCustomerRequirements(e.target.value)}
+                  placeholder="Enter any special requests or requirements..."
+                  className="min-h-[100px] resize-none"
+                  data-testid="textarea-customer-requirements"
+                />
+                <p className="text-xs text-muted-foreground">
+                  These notes will be saved with the invoice and visible in the customer directory.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-medium">Summary</CardTitle>

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ export default function B2BInvoice() {
   
   const [customerName, setCustomerName] = useState("");
   const [customerGst, setCustomerGst] = useState("");
+  const [customerRequirements, setCustomerRequirements] = useState("");
   const [paymentMode, setPaymentMode] = useState<"Cash" | "Online">("Online");
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -52,6 +54,7 @@ export default function B2BInvoice() {
       lastResetTimestamp.current = newTimestamp;
       setCustomerName("");
       setCustomerGst("");
+      setCustomerRequirements("");
       setPaymentMode("Online");
       setItems([]);
       setDialogOpen(false);
@@ -157,6 +160,7 @@ export default function B2BInvoice() {
       });
       setCustomerName("");
       setCustomerGst("");
+      setCustomerRequirements("");
       setItems([]);
     },
     onError: () => {
@@ -189,6 +193,7 @@ export default function B2BInvoice() {
       invoiceType: "B2B",
       customerName,
       customerGst,
+      customerRequirements,
       paymentMode,
       gstMode,
       items: items.map((item) => ({
@@ -358,6 +363,30 @@ export default function B2BInvoice() {
         </div>
 
         <div className="lg:col-span-1">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Customer Requirements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="customerRequirements" className="text-sm font-medium">
+                  Message or Product Request
+                </Label>
+                <Textarea
+                  id="customerRequirements"
+                  value={customerRequirements}
+                  onChange={(e) => setCustomerRequirements(e.target.value)}
+                  placeholder="Enter any special requests or requirements..."
+                  className="min-h-[100px] resize-none"
+                  data-testid="textarea-customer-requirements"
+                />
+                <p className="text-xs text-muted-foreground">
+                  These notes will be saved with the invoice and visible in the customer directory.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-medium">Summary</CardTitle>

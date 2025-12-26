@@ -277,6 +277,7 @@ export class DatabaseStorage implements IStorage {
     const normalizedInvoice = {
       ...invoice,
       customerPhone: invoice.customerPhone ?? null,
+      customerRequirements: invoice.customerRequirements ?? null,
       gstMode: invoice.gstMode ?? 'inclusive', // Explicitly include gstMode to override schema default
     };
     
@@ -299,6 +300,7 @@ export class DatabaseStorage implements IStorage {
     const normalizedInvoice = {
       ...invoice,
       customerPhone: invoice.customerPhone ?? null,
+      customerRequirements: invoice.customerRequirements ?? null,
     };
     // CRITICAL: Remove gstMode from update to preserve historical data integrity.
     // Once an invoice is created with a specific GST mode (inclusive/exclusive),

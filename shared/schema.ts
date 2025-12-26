@@ -52,6 +52,7 @@ export const invoices = pgTable("invoices", {
   grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
   cashAmount: decimal("cash_amount", { precision: 12, scale: 2 }).notNull().default(sql`0`),
   cardAmount: decimal("card_amount", { precision: 12, scale: 2 }).notNull().default(sql`0`),
+  customerRequirements: text("customer_requirements"), // Customer notes/requirements
   isEdited: boolean("is_edited").default(false).notNull(),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

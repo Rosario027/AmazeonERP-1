@@ -22,6 +22,7 @@ interface InvoiceData {
   invoiceType: string;
   customerName: string;
   customerPhone: string;
+  customerRequirements?: string | null;
   createdAt: string;
   subtotal: string;
   grandTotal: string;
@@ -191,6 +192,14 @@ export default function PrintInvoice() {
           </div>
           {invoice.customerPhone && (
             <div style={{ fontSize: "11px" }}>Ph: {invoice.customerPhone}</div>
+          )}
+          {invoice.customerRequirements && (
+            <div
+              className="no-print"
+              style={{ fontSize: "10px", marginTop: "4px", padding: "4px", backgroundColor: "#f5f5f5", borderRadius: "2px" }}
+            >
+              <strong>Requirements:</strong> {invoice.customerRequirements}
+            </div>
           )}
         </div>
 
