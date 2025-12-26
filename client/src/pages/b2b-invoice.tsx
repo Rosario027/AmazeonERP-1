@@ -380,9 +380,6 @@ export default function B2BInvoice() {
                   className="min-h-[100px] resize-none"
                   data-testid="textarea-customer-requirements"
                 />
-                <p className="text-xs text-muted-foreground">
-                  These notes will be saved with the invoice and visible in the customer directory.
-                </p>
               </div>
             </CardContent>
           </Card>
