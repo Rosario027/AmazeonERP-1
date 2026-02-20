@@ -74,23 +74,27 @@ export function InvoiceReceipt({
             .no-print {
               display: none !important;
             }
-            .receipt-container { width:80mm !important; max-width:80mm !important; }
+            /* ensure the receipt is fixed width and centered on paper */
+            .receipt-container { width:80mm !important; max-width:80mm !important; margin: 0 auto !important; box-sizing: border-box !important; font-family: Arial, Helvetica, sans-serif !important; }
             .receipt-item-row { page-break-inside: avoid; }
             .receipt-item-header, .receipt-totals-row { display:flex; justify-content:space-between; }
+            /* allow long words to break so totals don't overflow */
+            .receipt-container, .receipt-container * { word-break: break-word; }
           }
         `}
       </style>
       
       <div className="receipt-container" style={{
         width: "80mm",
-        maxWidth: "300px",
+        maxWidth: "80mm",
         margin: "0 auto",
         padding: "10px",
-        fontFamily: "monospace",
+        fontFamily: "Arial, Helvetica, sans-serif",
         fontSize: "12px",
         lineHeight: "1.4",
         color: "#000",
         backgroundColor: "#fff",
+        boxSizing: "border-box",
       }}>
         {/* Header with Logo */}
         <div style={{ textAlign: "center", marginBottom: "10px" }}>
